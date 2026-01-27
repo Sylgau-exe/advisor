@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ApexValue PMO Advisor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-bg: #0a0f1a;
+            --color-surface: #111827;
+            --color-surface-elevated: #1a2234;
+            --color-border: #2a3548;
+            --color-text: #f1f5f9;
+            --color-text-muted: #94a3b8;
+            --color-accent: #10b981;
+            --color-accent-hover: #059669;
+            --color-accent-glow: rgba(16, 185, 129, 0.15);
+            --color-secondary: #3b82f6;
+            --color-error: #ef4444;
+            --font-display: 'Fraunces', serif;
+            --font-body: 'DM Sans', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--color-bg);
+            color: var(--color-text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: 
+                linear-gradient(rgba(16, 185, 129, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(16, 185, 129, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        header {
+            padding: 20px 0;
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: var(--font-display);
+            font-size: 1.4rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 32px; height: 32px;
+            background: linear-gradient(135deg, var(--color-accent), var(--color-secondary));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-icon svg { width: 18px; height: 18px; stroke: white; stroke-width: 2; fill: none; }
+
+        .header-actions { display: flex; gap: 12px; align-items: center; }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 16px;
+            background: var(--color-surface);
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .user-info .name { color: var(--color-text); }
+        .user-info .badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .badge-free { background: var(--color-border); color: var(--color-text-muted); }
+        .badge-pro { background: var(--color-accent); color: var(--color-bg); }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: var(--color-accent);
+            color: white;
+        }
+        .btn-primary:hover { background: var(--color-accent-hover); transform: translateY(-1px); }
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        .btn-secondary {
+            background: var(--color-surface-elevated);
+            color: var(--color-text);
+            border: 1px solid var(--color-border);
+        }
+        .btn-secondary:hover { background: var(--color-border); }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--color-text-muted);
+            padding: 8px 12px;
+        }
+        .btn-ghost:hover { color: var(--color-text); }
+
+        .btn-large {
+            padding: 16px 32px;
+            font-size: 1rem;
+        }
+
+        /* Views */
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* Hero */
+        .hero {
+            padding: 80px 0 60px;
+            text-align: center;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--color-accent-glow);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 100px;
+            font-size: 0.85rem;
+            color: var(--color-accent);
+            margin-bottom: 24px;
+        }
+
+        .hero h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2.2rem, 5vw, 3.5rem);
+            font-weight: 700;
+            line-height: 1.15;
+            margin-bottom: 20px;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(135deg, var(--color-accent), var(--color-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 1.15rem;
+            color: var(--color-text-muted);
+            max-width: 550px;
+            margin: 0 auto 36px;
+        }
+
+        .hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+        /* Auth Forms */
+        .auth-section {
+            max-width: 400px;
+            margin: 60px auto;
+            padding: 40px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+        }
+
+        .auth-section h2 {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .auth-section .subtitle {
+            color: var(--color-text-muted);
+            text-align: center;
+            margin-bottom: 28px;
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            color: var(--color-text);
+            font-size: 1rem;
+            font-family: var(--font-body);
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--color-accent);
+        }
+
+        .form-error {
+            color: var(--color-error);
+            font-size: 0.85rem;
+            margin-top: 6px;
+        }
+
+        .auth-switch {
+            text-align: center;
+            margin-top: 20px;
+            color: var(--color-text-muted);
+            font-size: 0.9rem;
+        }
+
+        .auth-switch a {
+            color: var(--color-accent);
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .auth-switch a:hover { text-decoration: underline; }
+
+        /* Dashboard */
+        .dashboard {
+            padding: 60px 0;
+        }
+
+        .dashboard h1 {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .dashboard .subtitle {
+            color: var(--color-text-muted);
+            margin-bottom: 40px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 28px;
+            transition: all 0.2s ease;
+        }
+
+        .card:hover {
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .card-icon {
+            width: 48px; height: 48px;
+            background: var(--color-accent-glow);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            font-size: 1.5rem;
+        }
+
+        .card h3 {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+        }
+
+        .card p {
+            color: var(--color-text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 20px;
+        }
+
+        .card.locked {
+            position: relative;
+        }
+
+        .card.locked::after {
+            content: '🔒';
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            font-size: 1.2rem;
+        }
+
+        /* Steps */
+        .steps-section {
+            padding: 60px 0;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .steps-section h2 {
+            font-family: var(--font-display);
+            font-size: 1.8rem;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .steps-section .subtitle {
+            text-align: center;
+            color: var(--color-text-muted);
+            margin-bottom: 48px;
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+        }
+
+        .step {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 24px;
+            position: relative;
+        }
+
+        .step-number {
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            background: var(--color-accent);
+            color: var(--color-bg);
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+
+        .step h4 {
+            font-family: var(--font-display);
+            margin-bottom: 8px;
+            margin-top: 8px;
+        }
+
+        .step p {
+            color: var(--color-text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 14px 20px;
+            background: var(--color-surface-elevated);
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            font-size: 0.95rem;
+            z-index: 1000;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success { border-color: var(--color-accent); }
+        .toast.error { border-color: var(--color-error); }
+
+        /* Footer */
+        footer {
+            padding: 32px 0;
+            border-top: 1px solid var(--color-border);
+            text-align: center;
+            color: var(--color-text-muted);
+            font-size: 0.9rem;
+        }
+
+        footer a { color: var(--color-accent); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .header-actions { flex-direction: column; gap: 8px; }
+            .hero { padding: 50px 0 40px; }
+            .hero-cta { flex-direction: column; }
+            .hero-cta .btn { width: 100%; justify-content: center; }
+            .auth-section { margin: 40px 20px; padding: 28px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24">
+                        <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"></polygon>
+                        <line x1="12" y1="22" x2="12" y2="15.5"></line>
+                        <polyline points="22 8.5 12 15.5 2 8.5"></polyline>
+                    </svg>
+                </div>
+                ApexValue
+            </div>
+            <div class="header-actions" id="headerActions">
+                <!-- Dynamic content -->
+            </div>
+        </header>
+    </div>
+
+    <!-- Landing View -->
+    <div id="landingView" class="view">
+        <div class="container">
+            <section class="hero">
+                <div class="hero-badge">✨ Powered by NotebookLM</div>
+                <h1>Your AI-Powered<br><span>PMO Advisor</span></h1>
+                <p class="hero-subtitle">
+                    Transform your PMO with intelligent analysis, strategic recommendations, and professional deliverables—all built on industry best practices.
+                </p>
+                <div class="hero-cta">
+                    <button class="btn btn-primary btn-large" onclick="showView('register')">Get Started Free</button>
+                    <button class="btn btn-secondary btn-large" onclick="showView('login')">Sign In</button>
+                </div>
+            </section>
+
+            <section class="steps-section">
+                <h2>How It Works</h2>
+                <p class="subtitle">Get strategic PMO guidance in four simple steps</p>
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <h4>Access the Knowledge Base</h4>
+                        <p>Download our curated collection of PMO frameworks, templates, and best practices.</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <h4>Create Your Notebook</h4>
+                        <p>Open NotebookLM and create a new notebook. This will be your personalized PMO consulting workspace.</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <h4>Add Your Sources</h4>
+                        <p>Import our curated knowledge base, then add your own files—project charters, SOPs, templates, methodologies.</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <h4>Start Consulting</h4>
+                        <p>Ask questions, generate slide decks, create video briefings, and get AI-powered recommendations.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Register View -->
+    <div id="registerView" class="view">
+        <div class="container">
+            <div class="auth-section">
+                <h2>Create Account</h2>
+                <p class="subtitle">Start your PMO transformation journey</p>
+                <form id="registerForm" onsubmit="handleRegister(event)">
+                    <div class="form-group">
+                        <label for="regName">Name</label>
+                        <input type="text" id="regName" placeholder="Your name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regEmail">Email</label>
+                        <input type="email" id="regEmail" placeholder="you@company.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regPassword">Password</label>
+                        <input type="password" id="regPassword" placeholder="Min. 8 characters" required minlength="8">
+                    </div>
+                    <div id="registerError" class="form-error"></div>
+                    <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 8px;">
+                        Create Account
+                    </button>
+                </form>
+                <p class="auth-switch">
+                    Already have an account? <a onclick="showView('login')">Sign in</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login View -->
+    <div id="loginView" class="view">
+        <div class="container">
+            <div class="auth-section">
+                <h2>Welcome Back</h2>
+                <p class="subtitle">Sign in to your account</p>
+                <form id="loginForm" onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label for="loginEmail">Email</label>
+                        <input type="email" id="loginEmail" placeholder="you@company.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" placeholder="Your password" required>
+                    </div>
+                    <div id="loginError" class="form-error"></div>
+                    <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 8px;">
+                        Sign In
+                    </button>
+                </form>
+                <p class="auth-switch">
+                    Don't have an account? <a onclick="showView('register')">Create one</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard View -->
+    <div id="dashboardView" class="view">
+        <div class="container">
+            <section class="dashboard">
+                <h1>Welcome, <span id="userName">User</span></h1>
+                <p class="subtitle">Your PMO consulting workspace</p>
+                
+                <div class="dashboard-grid">
+                    <!-- Knowledge Base Card -->
+                    <div class="card" id="knowledgeBaseCard">
+                        <div class="card-icon">📚</div>
+                        <h3>PMO Knowledge Base</h3>
+                        <p>Curated frameworks including PMBOK 7th Edition, Stacey Complexity Model, Value Delivery Framework, and ready-to-use templates.</p>
+                        <div id="knowledgeBaseAction">
+                            <!-- Dynamic: Buy or Access button -->
+                        </div>
+                    </div>
+
+                    <!-- NotebookLM Card -->
+                    <div class="card">
+                        <div class="card-icon">🧠</div>
+                        <h3>Open NotebookLM</h3>
+                        <p>Create your personalized notebook, import the knowledge base, add your own documents, and start consulting.</p>
+                        <a href="https://notebooklm.google.com/" target="_blank" class="btn btn-secondary">
+                            Open NotebookLM →
+                        </a>
+                    </div>
+                </div>
+
+                <section class="steps-section" style="margin-top: 40px;">
+                    <h2>Quick Start Guide</h2>
+                    <p class="subtitle">Get up and running in minutes</p>
+                    <div class="steps">
+                        <div class="step">
+                            <div class="step-number">1</div>
+                            <h4>Download Knowledge Base</h4>
+                            <p>Access our curated PMO frameworks and templates from Google Drive.</p>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <h4>Create Notebook</h4>
+                            <p>Open NotebookLM and create a new notebook for your workspace.</p>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <h4>Add Sources</h4>
+                            <p>Import our files from Google Drive, then add your own SOPs, charters, and templates.</p>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">4</div>
+                            <h4>Start Consulting</h4>
+                            <p>Ask questions, generate presentations, and get AI-powered recommendations.</p>
+                        </div>
+                    </div>
+                </section>
+            </section>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>Built by <a href="https://sylvainpmo.com" target="_blank">Sylvain PMO Consulting</a> · Powered by <a href="https://notebooklm.google.com/" target="_blank">Google NotebookLM</a></p>
+        </div>
+    </footer>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // Configuration - UPDATE THESE
+        const CONFIG = {
+            GOOGLE_DRIVE_LINK: 'https://drive.google.com/drive/folders/1aKkPfZ3Nlb6KjP5QLsm1helBhMpG4TMX?usp=sharing',
+            PRICE_DISPLAY: '$19'
+        };
+
+        // State
+        let currentUser = null;
+        let authToken = localStorage.getItem('auth_token');
+
+        // API helpers
+        async function apiRequest(endpoint, options = {}) {
+            const headers = {
+                'Content-Type': 'application/json',
+                ...(authToken && { 'Authorization': `Bearer ${authToken}` }),
+                ...options.headers
+            };
+
+            const response = await fetch(`/api${endpoint}`, { ...options, headers });
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Request failed');
+            }
+
+            return data;
+        }
+
+        // Toast
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // View management
+        function showView(viewName) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(`${viewName}View`).classList.add('active');
+            updateHeader();
+        }
+
+        function updateHeader() {
+            const actions = document.getElementById('headerActions');
+            
+            if (currentUser) {
+                actions.innerHTML = `
+                    <div class="user-info">
+                        <span class="name">${currentUser.name}</span>
+                        <span class="badge ${currentUser.has_purchased ? 'badge-pro' : 'badge-free'}">
+                            ${currentUser.has_purchased ? 'PRO' : 'FREE'}
+                        </span>
+                    </div>
+                    <button class="btn btn-ghost" onclick="handleLogout()">Sign Out</button>
+                `;
+            } else {
+                actions.innerHTML = `
+                    <button class="btn btn-ghost" onclick="showView('login')">Sign In</button>
+                    <button class="btn btn-primary" onclick="showView('register')">Get Started</button>
+                `;
+            }
+        }
+
+        function updateDashboard() {
+            document.getElementById('userName').textContent = currentUser.name;
+            
+            const actionDiv = document.getElementById('knowledgeBaseAction');
+            const card = document.getElementById('knowledgeBaseCard');
+            
+            if (currentUser.has_purchased) {
+                card.classList.remove('locked');
+                actionDiv.innerHTML = `
+                    <a href="${CONFIG.GOOGLE_DRIVE_LINK}" target="_blank" class="btn btn-primary">
+                        Access Knowledge Base →
+                    </a>
+                `;
+            } else {
+                card.classList.add('locked');
+                actionDiv.innerHTML = `
+                    <button class="btn btn-primary" onclick="handlePurchase()">
+                        Unlock for ${CONFIG.PRICE_DISPLAY}
+                    </button>
+                `;
+            }
+        }
+
+        // Auth handlers
+        async function handleRegister(e) {
+            e.preventDefault();
+            const errorDiv = document.getElementById('registerError');
+            errorDiv.textContent = '';
+
+            const name = document.getElementById('regName').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+
+            try {
+                const data = await apiRequest('/auth/register', {
+                    method: 'POST',
+                    body: JSON.stringify({ name, email, password })
+                });
+
+                authToken = data.token;
+                localStorage.setItem('auth_token', authToken);
+                currentUser = data.user;
+                
+                showToast('Account created successfully!', 'success');
+                showView('dashboard');
+                updateDashboard();
+            } catch (error) {
+                errorDiv.textContent = error.message;
+            }
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const errorDiv = document.getElementById('loginError');
+            errorDiv.textContent = '';
+
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const data = await apiRequest('/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ email, password })
+                });
+
+                authToken = data.token;
+                localStorage.setItem('auth_token', authToken);
+                currentUser = data.user;
+                
+                showToast('Welcome back!', 'success');
+                showView('dashboard');
+                updateDashboard();
+            } catch (error) {
+                errorDiv.textContent = error.message;
+            }
+        }
+
+        function handleLogout() {
+            authToken = null;
+            currentUser = null;
+            localStorage.removeItem('auth_token');
+            showToast('Signed out');
+            showView('landing');
+        }
+
+        // Purchase handler
+        async function handlePurchase() {
+            try {
+                const data = await apiRequest('/checkout/create-session', {
+                    method: 'POST'
+                });
+                window.location.href = data.url;
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // Check for payment redirect
+        function checkPaymentStatus() {
+            const params = new URLSearchParams(window.location.search);
+            
+            if (params.get('payment') === 'success') {
+                showToast('🎉 Payment successful! Access granted.', 'success');
+                // Refresh user data
+                if (authToken) {
+                    loadCurrentUser();
+                }
+                window.history.replaceState({}, '', '/');
+            }
+            
+            if (params.get('payment') === 'cancelled') {
+                showToast('Payment cancelled', 'info');
+                window.history.replaceState({}, '', '/');
+            }
+        }
+
+        // Load current user
+        async function loadCurrentUser() {
+            if (!authToken) {
+                showView('landing');
+                return;
+            }
+
+            try {
+                const data = await apiRequest('/auth/me');
+                currentUser = data.user;
+                showView('dashboard');
+                updateDashboard();
+            } catch (error) {
+                // Token invalid
+                authToken = null;
+                localStorage.removeItem('auth_token');
+                showView('landing');
+            }
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            checkPaymentStatus();
+            loadCurrentUser();
+        });
+    </script>
+</body>
+</html>
