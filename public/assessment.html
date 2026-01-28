@@ -1,0 +1,2177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PM Skills Assessment | ApexValue</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            stone: {
+              50: '#fafaf9', 100: '#f5f5f4', 200: '#e7e5e4', 300: '#d6d3d1',
+              400: '#a8a29e', 500: '#78716c', 600: '#57534e', 700: '#44403c',
+              800: '#292524', 900: '#1c1917'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .fade-in { animation: fadeIn 0.3s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .tooltip { position: relative; }
+    .tooltip-content { 
+      visibility: hidden; opacity: 0; position: absolute; z-index: 50;
+      transition: opacity 0.2s, visibility 0.2s;
+    }
+    .tooltip:hover .tooltip-content { visibility: visible; opacity: 1; }
+  </style>
+</head>
+<body class="bg-stone-900 min-h-screen">
+  <!-- ApexValue Header -->
+  <header class="border-b border-stone-700 bg-stone-900/95 sticky top-0 z-50">
+    <div class="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
+      <a href="/" class="flex items-center gap-3 text-white font-semibold text-lg hover:opacity-80 transition-opacity">
+        <div class="w-8 h-8 bg-gradient-to-br from-emerald-500 to-blue-500 rounded-lg flex items-center justify-center">
+          <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"></polygon>
+            <line x1="12" y1="22" x2="12" y2="15.5"></line>
+            <polyline points="22 8.5 12 15.5 2 8.5"></polyline>
+          </svg>
+        </div>
+        ApexValue
+      </a>
+      <a href="/" class="text-stone-400 hover:text-white text-sm transition-colors">← Back to Platform</a>
+    </div>
+  </header>
+  
+  <div id="app"></div>
+
+  <script>
+    // State management
+    const state = {
+      currentStep: 'welcome',
+      profile: { name: '', title: '', organization: '', experience: '', certifications: [] },
+      objectives: { 
+        goal: '', // exploring, job, pmp, improve, support
+        timeline: '12',
+        learningStyle: 'balanced'
+      },
+      scores: {},
+      expandedSkill: null,
+      isGenerating: false
+    };
+
+    // ENHANCED: Detailed skill definitions with rubrics
+    const SKILL_AREAS = [
+      { 
+        id: 'basics', 
+        name: 'PM Definitions & Basics', 
+        description: 'Fundamentals, standards, project lifecycle',
+        rubric: {
+          1: { 
+            label: 'Novice',
+            criteria: [
+              "I'm new to project management concepts",
+              "I can't define what a project is vs. operations",
+              "I don't know the difference between project, program, and portfolio"
+            ]
+          },
+          2: {
+            label: 'Beginner', 
+            criteria: [
+              "I understand what a project is (temporary, unique deliverable)",
+              "I've heard of PMI/PMBOK but haven't studied it",
+              "I know projects have phases but can't name them"
+            ]
+          },
+          3: {
+            label: 'Intermediate',
+            criteria: [
+              "I can explain the 5 process groups (Initiate, Plan, Execute, M&C, Close)",
+              "I understand the triple constraint (scope, time, cost)",
+              "I know what a PMO is and its basic functions"
+            ]
+          },
+          4: {
+            label: 'Proficient',
+            criteria: [
+              "I can apply PMBOK knowledge areas in real projects",
+              "I understand different PM methodologies and when to use them",
+              "I can explain project success criteria to stakeholders"
+            ]
+          },
+          5: {
+            label: 'Expert',
+            criteria: [
+              "I can design PM frameworks for organizations",
+              "I mentor others on PM fundamentals",
+              "I contribute to PM standards or have authored PM content"
+            ]
+          }
+        }
+      },
+      { 
+        id: 'agile', 
+        name: 'Agile Methods for PMs', 
+        description: 'Understanding agile approaches to manage or work with agile teams',
+        rubric: {
+          1: { 
+            label: 'Novice',
+            criteria: [
+              "I've heard of Agile but don't understand how it differs from traditional PM",
+              "I don't know what a sprint or iteration is",
+              "I've never worked with or managed an Agile team"
+            ]
+          },
+          2: {
+            label: 'Beginner', 
+            criteria: [
+              "I understand Agile values and the Agile Manifesto basics",
+              "I know Scrum has roles like Product Owner and Scrum Master",
+              "I've participated in standups or sprint reviews"
+            ]
+          },
+          3: {
+            label: 'Intermediate',
+            criteria: [
+              "I can explain when to use Agile vs Waterfall approaches",
+              "I understand velocity, story points, and burndown charts",
+              "I can work effectively with Agile teams as a PM"
+            ]
+          },
+          4: {
+            label: 'Proficient',
+            criteria: [
+              "I can manage hybrid projects (Agile + Waterfall)",
+              "I integrate Agile teams into traditional project governance",
+              "I know when to recommend Agile vs predictive approaches"
+            ]
+          },
+          5: {
+            label: 'Expert',
+            criteria: [
+              "I can design hybrid frameworks for organizations",
+              "I advise leadership on Agile transformation from a PM perspective",
+              "I train PMs on working with Agile methodologies"
+            ]
+          }
+        }
+      },
+      { 
+        id: 'product', 
+        name: 'Product Management', 
+        description: 'Vision, roadmaps, business cases',
+        rubric: {
+          1: { 
+            label: 'Novice',
+            criteria: [
+              "I don't know the difference between project and product management",
+              "I've never created a business case",
+              "I don't know what a product roadmap is"
+            ]
+          },
+          2: {
+            label: 'Beginner', 
+            criteria: [
+              "I understand products have lifecycles",
+              "I can contribute to a business case with guidance",
+              "I've seen product roadmaps but haven't created one"
+            ]
+          },
+          3: {
+            label: 'Intermediate',
+            criteria: [
+              "I can create a basic product vision statement",
+              "I can build a business case with ROI analysis",
+              "I understand product-market fit concepts"
+            ]
+          },
+          4: {
+            label: 'Proficient',
+            criteria: [
+              "I can develop and maintain product roadmaps",
+              "I make data-driven prioritization decisions",
+              "I work effectively with product owners and stakeholders"
+            ]
+          },
+          5: {
+            label: 'Expert',
+            criteria: [
+              "I've launched multiple successful products",
+              "I can define product strategy aligned with business goals",
+              "I mentor product managers and owners"
+            ]
+          }
+        }
+      },
+      { 
+        id: 'initiation', 
+        name: 'Project Initiation', 
+        description: 'Charter, stakeholders, kickoff',
+        rubric: {
+          1: { 
+            label: 'Novice',
+            criteria: [
+              "I don't know what a project charter is",
+              "I've never identified project stakeholders formally",
+              "I haven't led or organized a project kickoff"
+            ]
+          },
+          2: {
+            label: 'Beginner', 
+            criteria: [
+              "I understand why we need a project charter",
+              "I can list obvious stakeholders (sponsor, team, customer)",
+              "I've participated in kickoff meetings"
+            ]
+          },
+          3: {
+            label: 'Intermediate',
+            criteria: [
+              "I can write a project charter with objectives and constraints",
+              "I use stakeholder analysis tools (power/interest grid)",
+              "I can plan and facilitate an effective kickoff meeting"
+            ]
+          },
+          4: {
+            label: 'Proficient',
+            criteria: [
+              "I create charters that gain sponsor buy-in quickly",
+              "I proactively identify hidden stakeholders and their needs",
+              "I tailor initiation activities to project size and type"
+            ]
+          },
+          5: {
+            label: 'Expert',
+            criteria: [
+              "I've standardized initiation processes for organizations",
+              "I coach others on stakeholder management strategies",
+              "I can initiate complex, multi-stakeholder programs"
+            ]
+          }
+        }
+      },
+      { 
+        id: 'scope', 
+        name: 'Scope Management', 
+        description: 'WBS, requirements, scope control',
+        rubric: {
+          1: { 
+            label: 'Novice',
+            criteria: [
+              "I don't know what a WBS (Work Breakdown Structure) is",
+              "I struggle to define clear project requirements",
+              "I've experienced scope creep but didn't know how to prevent it"
+            ]
+          },
+          2: {
+            label: 'Beginner', 
+            criteria: [
+              "I understand WBS breaks work into manageable pieces",
+              "I can document basic requirements with guidance",
+              "I know scope creep is bad but not sure how to control it"
+            ]
+          },
+          3: {
+            label: 'Intermediate',
+            criteria: [
+              "I can create a WBS following the 100% rule",
+              "I gather requirements using interviews and workshops",
+              "I use change control to manage scope changes"
+            ]
+          },
+          4: {
+            label: 'Proficient',
+            criteria: [
+              "I create detailed WBS dictionaries for complex projects",
+              "I facilitate JAD sessions and use multiple elicitation techniques",
+              "I effectively say 'no' to scope creep while maintaining relationships"
+            ]
+          },
+          5: {
+            label: 'Expert',
+            criteria: [
+              "I design scope management frameworks for organizations",
+              "I handle highly ambiguous requirements in innovative projects",
+              "I train others on requirements engineering and WBS creation"
+            ]
+          }
+        }
+      },
+      { 
+        id: 'time', 
+        name: 'Time Management', 
+        description: 'Scheduling, critical path, dependencies',
+        rubric: {
+          1: { 
+            label: 'Novice',
+            criteria: [
+              "I don't know how to create a project schedule",
+              "I've never heard of critical path or dependencies",
+              "I struggle to estimate how long tasks will take"
+            ]
+          },
+          2: {
+            label: 'Beginner', 
+            criteria: [
+              "I can create a simple task list with dates",
+              "I understand tasks can depend on each other",
+              "I've used Gantt charts but didn't create them myself"
+            ]
+          },
+          3: {
+            label: 'Intermediate',
+            criteria: [
+              "I can build a Gantt chart with dependencies (FS, SS, FF, SF)",
+              "I understand and can calculate the critical path",
+              "I use 3-point estimating for more accurate durations"
+            ]
+          },
+          4: {
+            label: 'Proficient',
+            criteria: [
+              "I can crash or fast-track schedules when needed",
+              "I perform resource leveling to optimize assignments",
+              "I proactively identify schedule risks and build buffers"
+            ]
+          },
+          5: {
+            label: 'Expert',
+            criteria: [
+              "I use Monte Carlo simulation for schedule risk analysis",
+              "I've managed schedules for programs with 100+ activities",
+              "I optimize schedules across multiple projects (portfolio level)"
+            ]
+          }
+        }
+      },
+      { 
+        id: 'cost', 
+        name: 'Cost Management', 
+        description: 'Budgeting, EVM, forecasting',
+        rubric: {
+          1: { 
+            label: 'Novice',
+            criteria: [
+              "I've never created or managed a project budget",
+              "I don't know what Earned Value Management (EVM) is",
+              "I can't explain the difference between estimate types"
+            ]
+          },
+          2: {
+            label: 'Beginner', 
+            criteria: [
+              "I understand projects need budgets with contingency",
+              "I've heard of EVM metrics like CPI and SPI",
+              "I can track actual costs vs. budget at a basic level"
+            ]
+          },
+          3: {
+            label: 'Intermediate',
+            criteria: [
+              "I can create a bottom-up cost estimate",
+              "I can calculate EVM metrics (PV, EV, AC, SV, CV, SPI, CPI)",
+              "I produce cost reports and variance explanations"
+            ]
+          },
+          4: {
+            label: 'Proficient',
+            criteria: [
+              "I forecast final costs using EAC formulas",
+              "I manage project budgets over $500K confidently",
+              "I use cost data to make resource and scope decisions"
+            ]
+          },
+          5: {
+            label: 'Expert',
+            criteria: [
+              "I've managed budgets over $5M+ with complex funding",
+              "I design cost management systems for organizations",
+              "I train others on EVM and financial project controls"
+            ]
+          }
+        }
+      },
+      { 
+        id: 'quality', 
+        name: 'Quality Management', 
+        description: 'QA/QC, cost of quality, standards',
+        rubric: {
+          1: { 
+            label: 'Novice',
+            criteria: [
+              "I don't know the difference between QA and QC",
+              "I've never created a quality plan",
+              "I'm not familiar with quality tools (Pareto, fishbone, etc.)"
+            ]
+          },
+          2: {
+            label: 'Beginner', 
+            criteria: [
+              "I understand QA prevents defects, QC finds them",
+              "I know testing is part of quality control",
+              "I've participated in quality reviews"
+            ]
+          },
+          3: {
+            label: 'Intermediate',
+            criteria: [
+              "I can create a quality management plan",
+              "I use quality tools like checklists and control charts",
+              "I understand cost of quality (prevention vs. failure costs)"
+            ]
+          },
+          4: {
+            label: 'Proficient',
+            criteria: [
+              "I design quality metrics and acceptance criteria",
+              "I lead quality audits and continuous improvement initiatives",
+              "I balance quality costs with project constraints"
+            ]
+          },
+          5: {
+            label: 'Expert',
+            criteria: [
+              "I implement quality frameworks (Six Sigma, TQM) at org level",
+              "I'm certified in quality methodologies (Six Sigma Black Belt)",
+              "I train others on quality management practices"
+            ]
+          }
+        }
+      },
+      { 
+        id: 'resources', 
+        name: 'Resource Management', 
+        description: 'Team building, RACI, allocation',
+        rubric: {
+          1: { 
+            label: 'Novice',
+            criteria: [
+              "I've never built or led a project team",
+              "I don't know what a RACI matrix is",
+              "I struggle to estimate resource needs"
+            ]
+          },
+          2: {
+            label: 'Beginner', 
+            criteria: [
+              "I understand teams need clear roles and responsibilities",
+              "I know RACI means Responsible, Accountable, Consulted, Informed",
+              "I can request resources but don't manage capacity"
+            ]
+          },
+          3: {
+            label: 'Intermediate',
+            criteria: [
+              "I create RACI matrices for project deliverables",
+              "I estimate resource needs and create resource calendars",
+              "I handle basic team conflicts and motivation issues"
+            ]
+          },
+          4: {
+            label: 'Proficient',
+            criteria: [
+              "I build high-performing teams across functions",
+              "I manage resource conflicts across multiple projects",
+              "I develop team members and conduct performance reviews"
+            ]
+          },
+          5: {
+            label: 'Expert',
+            criteria: [
+              "I design resource management processes for PMOs",
+              "I manage complex matrix organizations effectively",
+              "I coach other PMs on team development and leadership"
+            ]
+          }
+        }
+      },
+      { 
+        id: 'communication', 
+        name: 'Communication', 
+        description: 'Plans, reporting, meetings',
+        rubric: {
+          1: { 
+            label: 'Novice',
+            criteria: [
+              "I've never created a communication plan",
+              "I struggle to write clear status reports",
+              "I don't tailor my communication to different audiences"
+            ]
+          },
+          2: {
+            label: 'Beginner', 
+            criteria: [
+              "I understand different stakeholders need different info",
+              "I can write a basic status report",
+              "I participate in but don't lead project meetings"
+            ]
+          },
+          3: {
+            label: 'Intermediate',
+            criteria: [
+              "I create communication plans with stakeholder needs",
+              "I write executive summaries and detailed reports",
+              "I facilitate effective project meetings with agendas"
+            ]
+          },
+          4: {
+            label: 'Proficient',
+            criteria: [
+              "I adapt my style for executives, team, and clients",
+              "I deliver difficult messages professionally",
+              "I use dashboards and visuals to communicate status"
+            ]
+          },
+          5: {
+            label: 'Expert',
+            criteria: [
+              "I've presented to C-suite and boards regularly",
+              "I coach others on stakeholder communication",
+              "I design communication frameworks for programs"
+            ]
+          }
+        }
+      },
+      { 
+        id: 'risk', 
+        name: 'Risk Management', 
+        description: 'Identification, analysis, response',
+        rubric: {
+          1: { 
+            label: 'Novice',
+            criteria: [
+              "I don't proactively think about what could go wrong",
+              "I've never created a risk register",
+              "I react to problems rather than anticipating them"
+            ]
+          },
+          2: {
+            label: 'Beginner', 
+            criteria: [
+              "I understand risks have probability and impact",
+              "I can list obvious project risks",
+              "I know we should have contingency plans"
+            ]
+          },
+          3: {
+            label: 'Intermediate',
+            criteria: [
+              "I facilitate risk identification workshops",
+              "I score risks and prioritize using a risk matrix",
+              "I create response strategies (avoid, transfer, mitigate, accept)"
+            ]
+          },
+          4: {
+            label: 'Proficient',
+            criteria: [
+              "I quantify risks using expected monetary value (EMV)",
+              "I manage risk reserves and trigger conditions",
+              "I identify secondary risks and residual risks"
+            ]
+          },
+          5: {
+            label: 'Expert',
+            criteria: [
+              "I use Monte Carlo simulation for risk analysis",
+              "I design risk management frameworks for organizations",
+              "I manage enterprise risks across portfolios"
+            ]
+          }
+        }
+      },
+      { 
+        id: 'procurement', 
+        name: 'Procurement', 
+        description: 'Contracts, vendors, negotiation',
+        rubric: {
+          1: { 
+            label: 'Novice',
+            criteria: [
+              "I've never worked with vendors or contracts",
+              "I don't know the difference between RFP, RFQ, and RFI",
+              "I don't understand contract types (fixed price, T&M)"
+            ]
+          },
+          2: {
+            label: 'Beginner', 
+            criteria: [
+              "I understand we need contracts for external work",
+              "I can explain fixed price vs. time & materials basics",
+              "I've participated in vendor selection but didn't lead it"
+            ]
+          },
+          3: {
+            label: 'Intermediate',
+            criteria: [
+              "I can write an RFP and evaluate vendor proposals",
+              "I understand when to use different contract types",
+              "I manage vendor relationships and track deliverables"
+            ]
+          },
+          4: {
+            label: 'Proficient',
+            criteria: [
+              "I negotiate contracts and achieve favorable terms",
+              "I manage complex vendor relationships and disputes",
+              "I handle contract changes and claims professionally"
+            ]
+          },
+          5: {
+            label: 'Expert',
+            criteria: [
+              "I design procurement strategies for large programs",
+              "I've managed $1M+ vendor contracts",
+              "I train others on procurement and negotiation"
+            ]
+          }
+        }
+      },
+      { 
+        id: 'softskills', 
+        name: 'Soft Skills & Leadership', 
+        description: 'Influence, conflict, motivation',
+        rubric: {
+          1: { 
+            label: 'Novice',
+            criteria: [
+              "I avoid conflict rather than addressing it",
+              "I struggle to influence without formal authority",
+              "I haven't led teams before"
+            ]
+          },
+          2: {
+            label: 'Beginner', 
+            criteria: [
+              "I can have difficult conversations with support",
+              "I understand different leadership styles exist",
+              "I motivate myself but struggle to motivate others"
+            ]
+          },
+          3: {
+            label: 'Intermediate',
+            criteria: [
+              "I address conflicts constructively and find solutions",
+              "I influence stakeholders using data and relationships",
+              "I adapt my leadership style to the situation"
+            ]
+          },
+          4: {
+            label: 'Proficient',
+            criteria: [
+              "I navigate organizational politics effectively",
+              "I build trust quickly with new stakeholders",
+              "I coach and develop team members proactively"
+            ]
+          },
+          5: {
+            label: 'Expert',
+            criteria: [
+              "I'm sought out to resolve complex organizational conflicts",
+              "I influence senior executives and drive change",
+              "I mentor other project managers on leadership"
+            ]
+          }
+        }
+      }
+    ];
+
+    const STEPS = ['welcome', 'profile', 'objectives', 'assessment', 'results'];
+
+    function render() {
+      const app = document.getElementById('app');
+      app.innerHTML = `
+        <header class="bg-stone-900 text-white py-4 px-6">
+          <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center font-bold text-xl">A</div>
+              <div>
+                <div class="font-bold">ApexValue</div>
+                <div class="text-xs text-stone-400">PMO Advisor</div>
+              </div>
+            </div>
+            ${state.currentStep !== 'welcome' ? renderProgressIndicator() : ''}
+          </div>
+        </header>
+        <main class="max-w-4xl mx-auto py-8 px-6 fade-in">
+          ${renderStep()}
+        </main>
+      `;
+    }
+
+    function renderProgressIndicator() {
+      const steps = STEPS.filter(s => s !== 'welcome');
+      const currentIndex = steps.indexOf(state.currentStep);
+      return `
+        <div class="flex items-center gap-2">
+          ${steps.map((step, i) => `
+            <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+              i <= currentIndex ? 'bg-orange-500 text-white' : 'bg-stone-700 text-stone-400'
+            }">${i + 1}</div>
+            ${i < steps.length - 1 ? `<div class="w-8 h-0.5 ${i < currentIndex ? 'bg-orange-500' : 'bg-stone-700'}"></div>` : ''}
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function renderStep() {
+      switch (state.currentStep) {
+        case 'welcome': return renderWelcome();
+        case 'profile': return renderProfile();
+        case 'objectives': return renderObjectives();
+        case 'assessment': return renderAssessment();
+        case 'results': return renderResults();
+        default: return '';
+      }
+    }
+
+    function renderWelcome() {
+      return `
+        <div class="text-center py-12">
+          <h1 class="text-5xl font-black text-white mb-2">PROJECT MANAGER</h1>
+          <h1 class="text-5xl font-black text-white mb-2">SKILLS</h1>
+          <h1 class="text-5xl font-black text-orange-500 mb-8">ASSESSMENT</h1>
+          
+          <p class="text-xl text-stone-400 mb-8 max-w-2xl mx-auto">
+            Discover your PM skill gaps and get a personalized development plan 
+            tailored to your career goals.
+          </p>
+
+          <div class="flex justify-center gap-8 mb-12">
+            <div class="text-center">
+              <div class="text-3xl font-bold text-white">13</div>
+              <div class="text-sm text-stone-500">Skill Areas</div>
+            </div>
+            <div class="text-center">
+              <div class="text-3xl font-bold text-white">5</div>
+              <div class="text-sm text-stone-500">Minutes</div>
+            </div>
+            <div class="text-center">
+              <div class="text-3xl font-bold text-white">1</div>
+              <div class="text-sm text-stone-500">Custom Roadmap</div>
+            </div>
+          </div>
+
+          <button onclick="goToStep('profile')" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-12 rounded-lg text-lg transition-colors">
+            Start Assessment →
+          </button>
+
+          <p class="mt-6 text-sm text-stone-500">Free • No account required • Instant results</p>
+          
+          <div class="mt-12 bg-stone-800 rounded-xl p-6 max-w-xl mx-auto text-left border border-stone-700">
+            <h3 class="font-bold text-white mb-3 flex items-center gap-2">
+              <span class="text-orange-500">📋</span> What This Assessment Covers
+            </h3>
+            <div class="space-y-2 text-sm text-stone-400">
+              <p>• <strong class="text-white">Traditional Project Management</strong> skills aligned with PMBOK</p>
+              <p>• All 13 PM knowledge areas from initiation to closing</p>
+              <p>• Personalized roadmap based on YOUR career goals</p>
+              <p>• Resources from courses, simulations, and tools</p>
+            </div>
+            <div class="mt-4 pt-4 border-t border-stone-700 text-xs text-stone-500">
+              <strong>Note:</strong> This is for Project Managers, not Scrum Masters or Agile Coaches. 
+              Agile knowledge is included as one skill area PMs should understand.
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderProfile() {
+      const certs = ['PMP', 'CAPM', 'PMI-ACP', 'PRINCE2', 'Scrum Master', 'None yet'];
+      const isValid = state.profile.name && state.profile.title && state.profile.experience;
+      
+      return `
+        <div>
+          <h2 class="text-3xl font-bold text-white mb-2">About You</h2>
+          <p class="text-stone-400 mb-8">Help us personalize your development roadmap.</p>
+
+          <div class="bg-stone-800 rounded-xl p-8 shadow-sm border border-stone-700">
+            <div class="grid gap-6">
+              <div>
+                <label class="block text-sm font-medium text-stone-300 mb-2">Full Name *</label>
+                <input type="text" id="name" value="${state.profile.name}" 
+                  oninput="updateProfile('name', this.value)"
+                  class="w-full px-4 py-3 border border-stone-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  placeholder="John Smith">
+              </div>
+
+              <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-sm font-medium text-stone-300 mb-2">Job Title *</label>
+                  <input type="text" id="title" value="${state.profile.title}"
+                    oninput="updateProfile('title', this.value)"
+                    class="w-full px-4 py-3 border border-stone-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    placeholder="Project Manager">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-stone-300 mb-2">Organization</label>
+                  <input type="text" id="organization" value="${state.profile.organization}"
+                    oninput="updateProfile('organization', this.value)"
+                    class="w-full px-4 py-3 border border-stone-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    placeholder="Acme Corp">
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-stone-300 mb-2">Years of PM Experience *</label>
+                <select id="experience" onchange="updateProfile('experience', this.value)"
+                  class="w-full px-4 py-3 border border-stone-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                  <option value="">Select...</option>
+                  <option value="0-1" ${state.profile.experience === '0-1' ? 'selected' : ''}>0-1 years (New to PM)</option>
+                  <option value="2-3" ${state.profile.experience === '2-3' ? 'selected' : ''}>2-3 years (Some experience)</option>
+                  <option value="4-5" ${state.profile.experience === '4-5' ? 'selected' : ''}>4-5 years (Experienced)</option>
+                  <option value="6-10" ${state.profile.experience === '6-10' ? 'selected' : ''}>6-10 years (Senior)</option>
+                  <option value="10+" ${state.profile.experience === '10+' ? 'selected' : ''}>10+ years (Expert)</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-stone-300 mb-2">Certifications (select all that apply)</label>
+                <div class="flex flex-wrap gap-2">
+                  ${certs.map(cert => `
+                    <button onclick="toggleCert('${cert}')" class="px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                      state.profile.certifications.includes(cert)
+                        ? 'bg-orange-500 text-white'
+                        : 'bg-stone-800 text-stone-400 hover:bg-stone-200'
+                    }">${cert}</button>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-between mt-8">
+            <button onclick="goToStep('welcome')" class="text-stone-400 hover:text-white font-medium">← Back</button>
+            <button onclick="goToStep('objectives')" id="continueBtn" ${!isValid ? 'disabled' : ''} 
+              class="font-bold py-3 px-8 rounded-lg transition-colors ${
+                isValid ? 'bg-orange-500 hover:bg-orange-600 text-white' : 'bg-stone-200 text-stone-400 cursor-not-allowed'
+              }">Continue →</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderAssessment() {
+      const completed = Object.keys(state.scores).length;
+      const progress = (completed / SKILL_AREAS.length) * 100;
+      const allScored = SKILL_AREAS.every(s => state.scores[s.id] !== undefined);
+
+      return `
+        <div>
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <h2 class="text-3xl font-bold text-white mb-2">Skills Assessment</h2>
+              <p class="text-stone-400">Rate your current proficiency in each area.</p>
+            </div>
+            <div class="text-right">
+              <div class="text-2xl font-bold text-orange-500">${completed}/13</div>
+              <div class="text-sm text-stone-500">Completed</div>
+            </div>
+          </div>
+
+          <!-- Instructions -->
+          <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+            <div class="flex items-start gap-3">
+              <span class="text-orange-500 text-xl">💡</span>
+              <div class="text-sm text-stone-300">
+                <strong>How to rate yourself:</strong> Click "Show criteria" on any skill to see exactly what each level means. 
+                Be honest — this helps us create the best roadmap for you!
+              </div>
+            </div>
+          </div>
+
+          <div class="w-full h-2 bg-stone-200 rounded-full mb-6">
+            <div class="h-full bg-orange-500 rounded-full transition-all duration-300" style="width: ${progress}%"></div>
+          </div>
+
+          <div class="space-y-4">
+            ${SKILL_AREAS.map((skill, idx) => renderSkillCard(skill, idx)).join('')}
+          </div>
+
+          <div class="flex justify-between mt-8">
+            <button onclick="goToStep('objectives')" class="text-stone-400 hover:text-white font-medium">← Back</button>
+            <button onclick="goToStep('results')" ${!allScored ? 'disabled' : ''}
+              class="font-bold py-3 px-8 rounded-lg transition-colors ${
+                allScored ? 'bg-orange-500 hover:bg-orange-600 text-white' : 'bg-stone-200 text-stone-400 cursor-not-allowed'
+              }">See My Results →</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderSkillCard(skill, idx) {
+      const isExpanded = state.expandedSkill === skill.id;
+      const currentScore = state.scores[skill.id];
+      
+      return `
+        <div class="bg-stone-800 rounded-xl border-2 transition-all ${
+          currentScore !== undefined ? 'border-orange-200' : 'border-stone-700'
+        }">
+          <!-- Skill Header -->
+          <div class="p-6">
+            <div class="flex justify-between items-start mb-4">
+              <div class="flex items-center gap-3">
+                <span class="w-8 h-8 bg-stone-900 text-white rounded-full flex items-center justify-center text-sm font-bold">${idx + 1}</span>
+                <div>
+                  <h3 class="text-lg font-bold text-white">${skill.name}</h3>
+                  <p class="text-sm text-stone-500">${skill.description}</p>
+                </div>
+              </div>
+              ${currentScore !== undefined ? `
+                <div class="text-right">
+                  <div class="text-2xl font-bold text-orange-500">${currentScore}</div>
+                  <div class="text-xs text-stone-400">${skill.rubric[currentScore].label}</div>
+                </div>
+              ` : ''}
+            </div>
+
+            <!-- Rating Buttons -->
+            <div class="flex gap-2 mb-3">
+              ${[1,2,3,4,5].map(v => `
+                <button onclick="setScore('${skill.id}', ${v})" 
+                  class="flex-1 py-3 rounded-lg text-sm font-medium transition-all ${
+                    currentScore === v
+                      ? 'bg-orange-500 text-white shadow-lg scale-105'
+                      : 'bg-stone-800 text-stone-400 hover:bg-stone-200'
+                  }">
+                  <div class="font-bold">${v}</div>
+                  <div class="text-xs opacity-75">${skill.rubric[v].label}</div>
+                </button>
+              `).join('')}
+            </div>
+
+            <!-- Show/Hide Criteria Button -->
+            <button onclick="toggleExpanded('${skill.id}')" 
+              class="text-sm text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1">
+              ${isExpanded ? '▼ Hide' : '▶ Show'} criteria to help you decide
+            </button>
+          </div>
+
+          <!-- Expanded Rubric -->
+          ${isExpanded ? `
+            <div class="border-t border-stone-700 bg-stone-900 p-6">
+              <div class="grid gap-4">
+                ${[1,2,3,4,5].map(level => `
+                  <div class="flex gap-4 ${currentScore === level ? 'bg-orange-100 -mx-4 px-4 py-3 rounded-lg' : ''}">
+                    <div class="flex-shrink-0">
+                      <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
+                        currentScore === level 
+                          ? 'bg-orange-500 text-white' 
+                          : 'bg-stone-200 text-stone-400'
+                      }">
+                        ${level}
+                      </div>
+                    </div>
+                    <div class="flex-1">
+                      <div class="font-bold text-white mb-1">${skill.rubric[level].label}</div>
+                      <ul class="text-sm text-stone-400 space-y-1">
+                        ${skill.rubric[level].criteria.map(c => `
+                          <li class="flex items-start gap-2">
+                            <span class="text-stone-400 mt-0.5">•</span>
+                            <span>${c}</span>
+                          </li>
+                        `).join('')}
+                      </ul>
+                      <button onclick="setScore('${skill.id}', ${level})" 
+                        class="mt-2 text-xs font-medium ${
+                          currentScore === level 
+                            ? 'text-orange-600' 
+                            : 'text-stone-500 hover:text-orange-600'
+                        }">
+                        ${currentScore === level ? '✓ Selected' : 'Select this level'}
+                      </button>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    function renderObjectives() {
+      const goals = [
+        { 
+          value: 'exploring', 
+          icon: '🔍',
+          label: 'Exploring Project Management', 
+          desc: 'I want to understand what PM is about',
+          detail: 'Great for career exploration • Foundational knowledge',
+          target: 3,
+          targetLabel: '60%'
+        },
+        { 
+          value: 'support', 
+          icon: '🤝',
+          label: 'Support My Current Role', 
+          desc: 'I need PM skills but won\'t have a PM title',
+          detail: 'For team leads, coordinators, analysts, engineers',
+          target: 3,
+          targetLabel: '60%'
+        },
+        { 
+          value: 'job', 
+          icon: '💼',
+          label: 'Get a Project Manager Job', 
+          desc: 'I want to become a professional PM',
+          detail: 'Build job-ready skills • Interview preparation',
+          target: 4,
+          targetLabel: '80%'
+        },
+        { 
+          value: 'pmp', 
+          icon: '🎓',
+          label: 'Get PMP Certified', 
+          desc: 'I want to pass the PMP exam',
+          detail: 'Rigorous preparation • All knowledge areas mastered',
+          target: 5,
+          targetLabel: '90%+'
+        },
+        { 
+          value: 'improve', 
+          icon: '📈',
+          label: 'Improve as a PM', 
+          desc: 'I\'m already a PM and want to level up',
+          detail: 'Focus on your specific skill gaps',
+          target: 4,
+          targetLabel: '80%'
+        }
+      ];
+
+      const selectedGoal = goals.find(g => g.value === state.objectives.goal);
+
+      return `
+        <div>
+          <h2 class="text-3xl font-bold text-white mb-2">What's Your Goal?</h2>
+          <p class="text-stone-400 mb-8">This helps us set the right proficiency targets for your assessment.</p>
+
+          <!-- Goal Selection -->
+          <div class="bg-stone-800 rounded-xl p-6 shadow-sm border border-stone-700 mb-6">
+            <div class="space-y-3">
+              ${goals.map(goal => `
+                <button onclick="setObjective('goal', '${goal.value}')" 
+                  class="w-full p-4 rounded-xl border-2 text-left transition-all flex items-start gap-4 ${
+                    state.objectives.goal === goal.value 
+                      ? 'border-orange-500 bg-orange-50' 
+                      : 'border-stone-700 hover:border-stone-600'
+                  }">
+                  <div class="text-3xl">${goal.icon}</div>
+                  <div class="flex-1">
+                    <div class="font-bold text-white">${goal.label}</div>
+                    <div class="text-sm text-stone-400">${goal.desc}</div>
+                    <div class="text-xs text-stone-400 mt-1">${goal.detail}</div>
+                  </div>
+                  <div class="flex flex-col items-end">
+                    ${state.objectives.goal === goal.value ? `
+                      <div class="text-orange-500">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                      </div>
+                    ` : ''}
+                    <div class="text-xs text-stone-400 mt-1">Target: ${goal.targetLabel}</div>
+                  </div>
+                </button>
+              `).join('')}
+            </div>
+          </div>
+
+          ${state.objectives.goal ? `
+            <!-- What This Means -->
+            <div class="bg-stone-900 rounded-xl p-6 mb-6 text-white">
+              <div class="flex items-center gap-4 mb-3">
+                <div class="text-4xl">${selectedGoal.icon}</div>
+                <div>
+                  <div class="font-bold text-lg">${selectedGoal.label}</div>
+                  <div class="text-orange-400">Target: ${selectedGoal.targetLabel} proficiency</div>
+                </div>
+              </div>
+              <p class="text-sm text-stone-300">
+                ${state.objectives.goal === 'pmp' 
+                  ? 'PMP certification requires strong knowledge across all 13 PM knowledge areas. We\'ll identify your gaps so you can focus your study time effectively.'
+                  : state.objectives.goal === 'job'
+                  ? 'Employers look for practical, demonstrable skills. We\'ll help you build a portfolio of tools and experiences to showcase in interviews.'
+                  : state.objectives.goal === 'improve'
+                  ? 'As an experienced PM, you likely have strengths already. We\'ll pinpoint specific areas where targeted development will have the most impact.'
+                  : state.objectives.goal === 'support'
+                  ? 'You don\'t need to master everything — we\'ll focus on the core skills that will help you collaborate better with PMs and manage your own work.'
+                  : 'No pressure to master everything. We\'ll give you a solid foundation to decide if PM is the right career path for you.'
+                }
+              </p>
+            </div>
+          ` : ''}
+
+          <!-- Note about scope -->
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div class="flex items-start gap-3">
+              <span class="text-blue-500 text-xl">ℹ️</span>
+              <div class="text-sm text-stone-300">
+                <strong>Note:</strong> This assessment focuses on <strong>Traditional Project Management</strong> skills 
+                (PMBOK-aligned). It covers all 13 PM knowledge areas including Agile as a methodology that PMs should understand.
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-between mt-8">
+            <button onclick="goToStep('profile')" class="text-stone-400 hover:text-white font-medium">← Back</button>
+            <button onclick="goToStep('assessment')" ${!state.objectives.goal ? 'disabled' : ''}
+              class="font-bold py-3 px-8 rounded-lg transition-colors ${
+                state.objectives.goal 
+                  ? 'bg-orange-500 hover:bg-orange-600 text-white' 
+                  : 'bg-stone-200 text-stone-400 cursor-not-allowed'
+              }">Continue to Assessment →</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function setObjective(key, value) {
+      state.objectives[key] = value;
+      render();
+    }
+
+    function updatePreference(key, value) {
+      state.objectives[key] = value;
+      render();
+    }
+
+    function renderResults() {
+      const overallScore = calculateOverallScore();
+      const gaps = getGaps();
+      const topGaps = gaps.slice(0, 4);
+      const strengths = SKILL_AREAS.map(s => ({ ...s, score: state.scores[s.id] || 0 }))
+        .filter(s => s.score >= 4).sort((a, b) => b.score - a.score).slice(0, 3);
+
+      const getScoreColor = (score) => score >= 80 ? 'text-emerald-500' : score >= 60 ? 'text-amber-500' : 'text-rose-500';
+      const getBarColor = (score) => score >= 4 ? 'bg-emerald-500' : score >= 3 ? 'bg-amber-500' : 'bg-rose-500';
+
+      // Generate roadmap based on gaps and objectives
+      const roadmap = generateRoadmap(gaps, state.objectives.timeline, state.objectives.learningStyle);
+
+      // Get goal info for display
+      const goalLabels = {
+        'exploring': { icon: '🔍', label: 'Exploring PM', target: '60%' },
+        'support': { icon: '🤝', label: 'Supporting Role', target: '60%' },
+        'job': { icon: '💼', label: 'PM Career', target: '80%' },
+        'pmp': { icon: '🎓', label: 'PMP Certification', target: '90%+' },
+        'improve': { icon: '📈', label: 'Skill Improvement', target: 'Gap-based' }
+      };
+      const currentGoal = goalLabels[state.objectives.goal] || goalLabels['job'];
+
+      return `
+        <div>
+          <div class="bg-stone-900 -mx-6 -mt-8 px-6 py-8 mb-8 rounded-b-3xl">
+            <div class="flex justify-between items-start mb-4">
+              <div>
+                <h2 class="text-3xl font-bold text-white mb-2">Your Results</h2>
+                <p class="text-stone-400">Assessment for ${state.profile.name}</p>
+              </div>
+              <div class="text-right">
+                <div class="text-3xl">${currentGoal.icon}</div>
+                <div class="text-sm text-stone-400">Goal: ${currentGoal.label}</div>
+                <div class="text-xs text-orange-400">Target: ${currentGoal.target}</div>
+              </div>
+            </div>
+            
+            <div class="grid md:grid-cols-4 gap-4 mt-6">
+              <div class="bg-stone-800 rounded-xl p-4">
+                <div class="text-4xl font-black ${getScoreColor(overallScore)}">${overallScore}%</div>
+                <div class="text-sm text-stone-400">Overall Score</div>
+              </div>
+              <div class="bg-stone-800 rounded-xl p-4">
+                <div class="text-4xl font-black text-orange-500">${gaps.length}</div>
+                <div class="text-sm text-stone-400">Skill Gaps</div>
+              </div>
+              <div class="bg-stone-800 rounded-xl p-4">
+                <div class="text-4xl font-black text-white">${state.objectives.timeline}</div>
+                <div class="text-sm text-stone-400">Week Plan</div>
+              </div>
+              <div class="bg-stone-800 rounded-xl p-4">
+                <div class="text-4xl font-black text-emerald-500">${strengths.length}</div>
+                <div class="text-sm text-stone-400">Strengths</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Skills Breakdown -->
+          <div class="bg-stone-800 rounded-xl p-6 shadow-sm border border-stone-700 mb-6">
+            <h3 class="font-bold text-white mb-4">Skills Breakdown</h3>
+            <div class="space-y-3">
+              ${SKILL_AREAS.map(skill => {
+                const score = state.scores[skill.id] || 0;
+                const barColor = score >= 4 ? 'bg-emerald-500' : score >= 3 ? 'bg-amber-500' : 'bg-rose-500';
+                const textColor = score >= 4 ? 'text-emerald-500' : score >= 3 ? 'text-amber-500' : 'text-rose-500';
+                return `
+                  <div class="flex items-center gap-4">
+                    <div class="w-40 text-sm text-stone-400 truncate">${skill.name}</div>
+                    <div class="flex-1 h-3 bg-stone-800 rounded-full overflow-hidden">
+                      <div class="${barColor} h-full transition-all duration-500" style="width: ${score * 20}%"></div>
+                    </div>
+                    <div class="w-12 text-right font-bold ${textColor}">${score * 20}%</div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+
+          <!-- Priority Gaps -->
+          <div class="bg-stone-800 rounded-xl p-6 shadow-sm border border-stone-700 mb-6">
+            <h3 class="font-bold text-white mb-4">Priority Development Areas</h3>
+            <div class="space-y-3">
+              ${topGaps.length > 0 ? topGaps.map((gap, i) => `
+                <div class="flex items-center justify-between p-4 bg-stone-900 rounded-lg">
+                  <div class="flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${
+                      i === 0 ? 'bg-rose-500' : 'bg-amber-500'
+                    }">${i + 1}</span>
+                    <div>
+                      <div class="font-medium text-white">${gap.name}</div>
+                      <div class="text-sm text-stone-500">Current: ${gap.current * 20}% → Target: ${gap.target * 20}%</div>
+                    </div>
+                  </div>
+                  <div class="text-lg font-bold ${i === 0 ? 'text-rose-500' : 'text-amber-500'}">+${gap.gap * 20}%</div>
+                </div>
+              `).join('') : `
+                <div class="text-center py-8 text-stone-500">
+                  🎉 Amazing! You've already met your target level in all areas!
+                </div>
+              `}
+            </div>
+          </div>
+
+          <!-- Roadmap Preferences -->
+          <div class="bg-stone-800 rounded-xl p-6 shadow-sm border border-stone-700 mb-6">
+            <h3 class="font-bold text-white mb-4">Customize Your Roadmap</h3>
+            <div class="grid md:grid-cols-2 gap-6">
+              <div>
+                <label class="block text-sm font-medium text-stone-400 mb-2">Timeline</label>
+                <div class="flex gap-2">
+                  ${[
+                    { value: '8', label: '8 wks' },
+                    { value: '12', label: '12 wks' },
+                    { value: '16', label: '16 wks' }
+                  ].map(opt => `
+                    <button onclick="updatePreference('timeline', '${opt.value}')"
+                      class="flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                        state.objectives.timeline === opt.value 
+                          ? 'bg-orange-500 text-white' 
+                          : 'bg-stone-800 text-stone-400 hover:bg-stone-200'
+                      }">
+                      ${opt.label}
+                    </button>
+                  `).join('')}
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-stone-400 mb-2">Learning Style</label>
+                <div class="flex gap-2">
+                  ${[
+                    { value: 'video', label: '📹 Video' },
+                    { value: 'hands-on', label: '🛠 Hands-on' },
+                    { value: 'balanced', label: '⚖️ Balanced' }
+                  ].map(opt => `
+                    <button onclick="updatePreference('learningStyle', '${opt.value}')"
+                      class="flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                        state.objectives.learningStyle === opt.value 
+                          ? 'bg-orange-500 text-white' 
+                          : 'bg-stone-800 text-stone-400 hover:bg-stone-200'
+                      }">
+                      ${opt.label}
+                    </button>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- YOUR PERSONALIZED ROADMAP -->
+          <div class="bg-stone-800 rounded-xl p-6 shadow-sm border border-stone-700 mb-6">
+            <div class="flex items-center justify-between mb-6">
+              <h3 class="font-bold text-white text-xl">Your ${state.objectives.timeline}-Week Development Roadmap</h3>
+              <span class="text-sm text-stone-500">${roadmap.totalHours} hours total</span>
+            </div>
+
+            <!-- Phase Timeline -->
+            <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
+              ${roadmap.phases.map((phase, i) => `
+                <div class="flex-1 min-w-[120px]">
+                  <div class="h-2 rounded-full ${phase.color}"></div>
+                  <div class="mt-2 text-xs font-medium text-stone-400">${phase.name}</div>
+                  <div class="text-xs text-stone-400">Weeks ${phase.weeks}</div>
+                </div>
+              `).join('')}
+            </div>
+
+            <!-- Roadmap Steps -->
+            <div class="space-y-3">
+              ${roadmap.steps.map((step, i) => `
+                <div class="flex items-start gap-4 p-4 rounded-lg ${i % 2 === 0 ? 'bg-stone-900' : 'bg-stone-800'} border border-stone-700 hover:border-stone-600 transition-colors">
+                  <div class="flex-shrink-0">
+                    <div class="w-8 h-8 rounded-full bg-stone-900 text-white flex items-center justify-center text-sm font-bold">
+                      ${i + 1}
+                    </div>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1">
+                      <span class="px-2 py-0.5 rounded text-xs font-bold ${step.typeBadgeClass}">${step.type}</span>
+                      <a href="${step.url}" target="_blank" class="font-medium text-white hover:text-orange-600 hover:underline transition-colors">
+                        ${step.title} →
+                      </a>
+                    </div>
+                    <div class="text-sm text-stone-500">${step.description}</div>
+                    <div class="flex items-center gap-4 mt-2 text-xs text-stone-400">
+                      <span>📍 ${step.platform}</span>
+                      <span>⏱ ${step.duration}</span>
+                      <span>📅 Week ${step.week}</span>
+                    </div>
+                  </div>
+                  <div class="flex-shrink-0 flex flex-col items-end gap-2">
+                    <span class="text-xs px-2 py-1 rounded-full ${step.skillBadgeClass}">${step.skill}</span>
+                    <a href="${step.url}" target="_blank" class="text-xs text-orange-500 hover:text-orange-600 font-medium">
+                      Open →
+                    </a>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+
+            <!-- Summary -->
+            <div class="mt-6 pt-6 border-t border-stone-700">
+              <div class="grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <div class="text-2xl font-bold text-emerald-600">${roadmap.counts.courses}</div>
+                  <div class="text-xs text-stone-500">Courses</div>
+                </div>
+                <div>
+                  <div class="text-2xl font-bold text-purple-600">${roadmap.counts.simulations}</div>
+                  <div class="text-xs text-stone-500">Simulations</div>
+                </div>
+                <div>
+                  <div class="text-2xl font-bold text-cyan-600">${roadmap.counts.tools}</div>
+                  <div class="text-xs text-stone-500">Tools</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Platform Links -->
+          <div class="bg-stone-800 rounded-xl p-6 shadow-sm border border-stone-700 mb-6">
+            <h3 class="font-bold text-white mb-4">Where to Access Your Resources</h3>
+            <div class="grid md:grid-cols-3 gap-4">
+              <a href="https://the-executive-producer.thinkific.com" target="_blank" 
+                class="p-4 bg-emerald-50 rounded-lg border border-emerald-200 hover:border-emerald-400 transition-colors">
+                <div class="text-2xl mb-2">📚</div>
+                <div class="font-medium text-white">Training Courses</div>
+                <div class="text-sm text-stone-400">the-executive-producer.com</div>
+                <div class="text-xs text-emerald-600 mt-2">${roadmap.counts.courses} courses in your plan →</div>
+              </a>
+              <a href="https://bizsimlive.com" target="_blank"
+                class="p-4 bg-purple-50 rounded-lg border border-purple-200 hover:border-purple-400 transition-colors">
+                <div class="text-2xl mb-2">🎮</div>
+                <div class="font-medium text-white">Simulations</div>
+                <div class="text-sm text-stone-400">bizsimlive.com</div>
+                <div class="text-xs text-purple-600 mt-2">${roadmap.counts.simulations} simulations in your plan →</div>
+              </a>
+              <a href="https://projectmanagertool.com" target="_blank"
+                class="p-4 bg-cyan-50 rounded-lg border border-cyan-200 hover:border-cyan-400 transition-colors">
+                <div class="text-2xl mb-2">🛠</div>
+                <div class="font-medium text-white">PM Tools</div>
+                <div class="text-sm text-stone-400">projectmanagertool.com</div>
+                <div class="text-xs text-cyan-600 mt-2">${roadmap.counts.tools} tools in your plan →</div>
+              </a>
+            </div>
+          </div>
+
+          <!-- Download CTA -->
+          <div class="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl p-8 text-center text-white">
+            <h3 class="text-2xl font-bold mb-2">Save Your Roadmap</h3>
+            <p class="mb-6 opacity-90">Download a beautifully formatted PDF to track your progress and share with your manager.</p>
+            <button onclick="generateReport()" id="downloadBtn"
+              class="bg-stone-800 text-orange-600 font-bold py-4 px-12 rounded-lg hover:bg-orange-50 transition-colors">
+              📄 Download PDF Report
+            </button>
+            <p class="mt-4 text-sm opacity-75">Includes: Full assessment • Detailed roadmap • Resource links</p>
+          </div>
+
+          <div class="flex justify-between mt-8">
+            <button onclick="goToStep('assessment')" class="text-stone-400 hover:text-white font-medium">← Back</button>
+            <button onclick="location.reload()" class="text-stone-400 hover:text-white font-medium">Start Over</button>
+          </div>
+        </div>
+      `;
+    }
+
+    // Helper functions
+    function calculateOverallScore() {
+      const values = Object.values(state.scores);
+      if (values.length === 0) return 0;
+      return Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 20);
+    }
+
+    function getGaps() {
+      // Dynamic target based on objective
+      const targetByGoal = { 
+        'exploring': 3,  // Intermediate
+        'support': 3,    // Intermediate  
+        'job': 4,        // Proficient
+        'pmp': 5,        // Expert
+        'improve': 4     // Proficient (focus on gaps)
+      };
+      const target = targetByGoal[state.objectives.goal] || 4;
+      
+      return SKILL_AREAS
+        .map(skill => ({ ...skill, current: state.scores[skill.id] || 0, target, gap: target - (state.scores[skill.id] || 0) }))
+        .filter(s => s.gap > 0)
+        .sort((a, b) => b.gap - a.gap);
+    }
+
+    // Resource mapping for each skill area with URLs
+    const RESOURCE_MAP = {
+      basics: {
+        courses: [{ title: 'PM Fundamentals', duration: '13 hrs', platform: 'the-executive-producer.com', url: 'https://the-executive-producer.thinkific.com' }],
+        simulations: [],
+        tools: [{ title: 'CharterPro', duration: '1 hr', platform: 'projectmanagertool.com', url: 'https://projectmanagertool.com' }],
+        free: [{ title: 'What is Project Management?', duration: '15 min', platform: 'YouTube', url: 'https://www.youtube.com/results?search_query=what+is+project+management+basics' }]
+      },
+      agile: {
+        courses: [{ title: 'Agile & Hybrid PM', duration: '3.5 hrs', platform: 'the-executive-producer.com', url: 'https://the-executive-producer.thinkific.com' }],
+        simulations: [{ title: 'Project Apex: Tech Startup', duration: '45 min', platform: 'bizsimlive.com', url: 'https://simulations-six.vercel.app' }],
+        tools: [],
+        free: [{ title: 'Scrum in 10 Minutes', duration: '10 min', platform: 'YouTube', url: 'https://www.youtube.com/results?search_query=scrum+explained+in+10+minutes' }]
+      },
+      product: {
+        courses: [{ title: 'Product, Resource & Procurement', duration: '2 hrs', platform: 'the-executive-producer.com', url: 'https://the-executive-producer.thinkific.com' }],
+        simulations: [],
+        tools: [{ title: 'ROI Calculator', duration: '30 min', platform: 'projectmanagertool.com', url: 'https://projectmanagertool.com' }],
+        free: []
+      },
+      initiation: {
+        courses: [{ title: 'Initiation & Scope Management', duration: '2 hrs', platform: 'the-executive-producer.com', url: 'https://the-executive-producer.thinkific.com' }],
+        simulations: [{ title: 'Project Apex: Tech Startup', duration: '45 min', platform: 'bizsimlive.com', url: 'https://simulations-six.vercel.app' }],
+        tools: [{ title: 'CharterPro', duration: '1 hr', platform: 'projectmanagertool.com', url: 'https://projectmanagertool.com' }],
+        free: []
+      },
+      scope: {
+        courses: [{ title: 'Initiation & Scope Management', duration: '2 hrs', platform: 'the-executive-producer.com', url: 'https://the-executive-producer.thinkific.com' }],
+        simulations: [{ title: 'Project Apex: Construction', duration: '60 min', platform: 'bizsimlive.com', url: 'https://simulations-six.vercel.app' }],
+        tools: [{ title: 'WBS Builder', duration: '1 hr', platform: 'projectmanagertool.com', url: 'https://projectmanagertool.com' }],
+        free: [{ title: 'How to Create a WBS', duration: '20 min', platform: 'YouTube', url: 'https://www.youtube.com/results?search_query=how+to+create+work+breakdown+structure' }]
+      },
+      time: {
+        courses: [{ title: 'Time & Cost Management', duration: '2.5 hrs', platform: 'the-executive-producer.com', url: 'https://the-executive-producer.thinkific.com' }],
+        simulations: [{ title: 'Project Apex: Construction', duration: '60 min', platform: 'bizsimlive.com', url: 'https://simulations-six.vercel.app' }],
+        tools: [{ title: 'Gantt Chart Builder', duration: '1 hr', platform: 'projectmanagertool.com', url: 'https://projectmanagertool.com' }],
+        free: [{ title: 'Critical Path Method Explained', duration: '15 min', platform: 'YouTube', url: 'https://www.youtube.com/results?search_query=critical+path+method+explained' }]
+      },
+      cost: {
+        courses: [{ title: 'Earned Value Management', duration: '2.5 hrs', platform: 'the-executive-producer.com', url: 'https://the-executive-producer.thinkific.com' }],
+        simulations: [{ title: 'Budget Crisis', duration: '45 min', platform: 'bizsimlive.com', url: 'https://simulations-six.vercel.app' }],
+        tools: [{ title: 'EVM Calculator', duration: '1 hr', platform: 'projectmanagertool.com', url: 'https://projectmanagertool.com' }],
+        free: [{ title: 'EVM Basics in 10 Minutes', duration: '10 min', platform: 'YouTube', url: 'https://www.youtube.com/results?search_query=earned+value+management+basics' }]
+      },
+      quality: {
+        courses: [{ title: 'Quality & Risk Management', duration: '2 hrs', platform: 'the-executive-producer.com', url: 'https://the-executive-producer.thinkific.com' }],
+        simulations: [],
+        tools: [{ title: 'DMAIC Generator', duration: '30 min', platform: 'projectmanagertool.com', url: 'https://projectmanagertool.com' }],
+        free: []
+      },
+      resources: {
+        courses: [{ title: 'Product, Resource & Procurement', duration: '2 hrs', platform: 'the-executive-producer.com', url: 'https://the-executive-producer.thinkific.com' }],
+        simulations: [{ title: 'Project Apex: Tech Startup', duration: '45 min', platform: 'bizsimlive.com', url: 'https://simulations-six.vercel.app' }],
+        tools: [{ title: 'RACI Matrix Builder', duration: '30 min', platform: 'projectmanagertool.com', url: 'https://projectmanagertool.com' }],
+        free: []
+      },
+      communication: {
+        courses: [{ title: 'Communication & Soft Skills', duration: '2.5 hrs', platform: 'the-executive-producer.com', url: 'https://the-executive-producer.thinkific.com' }],
+        simulations: [{ title: 'Negotiation Challenge', duration: '30 min', platform: 'bizsimlive.com', url: 'https://simulations-six.vercel.app' }],
+        tools: [],
+        free: []
+      },
+      risk: {
+        courses: [{ title: 'Quality & Risk Management', duration: '2 hrs', platform: 'the-executive-producer.com', url: 'https://the-executive-producer.thinkific.com' }],
+        simulations: [{ title: 'Project Apex: R&D Innovation', duration: '60 min', platform: 'bizsimlive.com', url: 'https://simulations-six.vercel.app' }],
+        tools: [{ title: 'Risk Register', duration: '45 min', platform: 'projectmanagertool.com', url: 'https://projectmanagertool.com' }],
+        free: [{ title: 'Risk Management Basics', duration: '15 min', platform: 'YouTube', url: 'https://www.youtube.com/results?search_query=project+risk+management+basics' }]
+      },
+      procurement: {
+        courses: [{ title: 'Procurement Mastery', duration: '3.5 hrs', platform: 'the-executive-producer.com', url: 'https://the-executive-producer.thinkific.com' }],
+        simulations: [{ title: 'Vendor Negotiation', duration: '45 min', platform: 'bizsimlive.com', url: 'https://simulations-six.vercel.app' }],
+        tools: [{ title: 'RFP/RFQ Builder', duration: '1 hr', platform: 'projectmanagertool.com', url: 'https://projectmanagertool.com' }],
+        free: [{ title: 'Contract Types Explained', duration: '20 min', platform: 'YouTube', url: 'https://www.youtube.com/results?search_query=project+contract+types+fixed+price+time+materials' }]
+      },
+      softskills: {
+        courses: [{ title: 'Communication & Soft Skills', duration: '2.5 hrs', platform: 'the-executive-producer.com', url: 'https://the-executive-producer.thinkific.com' }],
+        simulations: [{ title: 'Negotiation Challenge', duration: '30 min', platform: 'bizsimlive.com', url: 'https://simulations-six.vercel.app' }],
+        tools: [],
+        free: [{ title: 'Leadership for PMs', duration: '20 min', platform: 'YouTube', url: 'https://www.youtube.com/results?search_query=leadership+skills+for+project+managers' }]
+      }
+    };
+
+    function generateRoadmap(gaps, timeline, learningStyle) {
+      const weeks = parseInt(timeline);
+      const steps = [];
+      let totalHours = 0;
+      let courseCount = 0, simCount = 0, toolCount = 0;
+
+      // Calculate phases
+      const phases = [
+        { name: 'Foundation', weeks: `1-${Math.floor(weeks * 0.25)}`, color: 'bg-emerald-500' },
+        { name: 'Core Skills', weeks: `${Math.floor(weeks * 0.25) + 1}-${Math.floor(weeks * 0.5)}`, color: 'bg-blue-500' },
+        { name: 'Advanced', weeks: `${Math.floor(weeks * 0.5) + 1}-${Math.floor(weeks * 0.75)}`, color: 'bg-purple-500' },
+        { name: 'Mastery', weeks: `${Math.floor(weeks * 0.75) + 1}-${weeks}`, color: 'bg-orange-500' }
+      ];
+
+      // Badge styles
+      const typeBadges = {
+        'WATCH': 'bg-blue-100 text-blue-700',
+        'COURSE': 'bg-emerald-100 text-emerald-700',
+        'TOOL': 'bg-cyan-100 text-cyan-700',
+        'SIMULATE': 'bg-purple-100 text-purple-700',
+        'APPLY': 'bg-amber-100 text-amber-700',
+        'ASSESS': 'bg-rose-100 text-rose-700'
+      };
+
+      const skillBadges = {
+        'basics': 'bg-stone-800 text-stone-400',
+        'agile': 'bg-blue-50 text-blue-600',
+        'product': 'bg-green-50 text-green-600',
+        'initiation': 'bg-emerald-50 text-emerald-600',
+        'scope': 'bg-teal-50 text-teal-600',
+        'time': 'bg-cyan-50 text-cyan-600',
+        'cost': 'bg-amber-50 text-amber-600',
+        'quality': 'bg-lime-50 text-lime-600',
+        'resources': 'bg-orange-50 text-orange-600',
+        'communication': 'bg-pink-50 text-pink-600',
+        'risk': 'bg-red-50 text-red-600',
+        'procurement': 'bg-violet-50 text-violet-600',
+        'softskills': 'bg-fuchsia-50 text-fuchsia-600'
+      };
+
+      // Generate steps based on gaps
+      let currentWeek = 1;
+      const weeksPerGap = Math.max(1, Math.floor(weeks / Math.max(gaps.length, 1)));
+
+      gaps.forEach((gap, gapIndex) => {
+        const resources = RESOURCE_MAP[gap.id];
+        if (!resources) return;
+
+        const skillName = gap.name.split(' ')[0]; // Short name
+
+        // Add free resource first (if learning style allows)
+        if (resources.free.length > 0 && (learningStyle === 'video' || learningStyle === 'balanced')) {
+          const free = resources.free[0];
+          steps.push({
+            type: 'WATCH',
+            title: free.title,
+            description: 'Free introduction to build foundational knowledge',
+            platform: free.platform,
+            duration: free.duration,
+            week: currentWeek,
+            skill: skillName,
+            url: free.url || '#',
+            typeBadgeClass: typeBadges['WATCH'],
+            skillBadgeClass: skillBadges[gap.id] || 'bg-stone-800 text-stone-400'
+          });
+          totalHours += parseFloat(free.duration) / 60 || 0.5;
+        }
+
+        // Add course (if learning style allows)
+        if (resources.courses.length > 0 && (learningStyle === 'video' || learningStyle === 'balanced')) {
+          const course = resources.courses[0];
+          steps.push({
+            type: 'COURSE',
+            title: course.title,
+            description: 'Comprehensive training with video lessons and quizzes',
+            platform: course.platform,
+            duration: course.duration,
+            week: currentWeek,
+            skill: skillName,
+            url: course.url || '#',
+            typeBadgeClass: typeBadges['COURSE'],
+            skillBadgeClass: skillBadges[gap.id] || 'bg-stone-800 text-stone-400'
+          });
+          totalHours += parseFloat(course.duration) || 2;
+          courseCount++;
+        }
+
+        // Add tool (if learning style allows)
+        if (resources.tools.length > 0 && (learningStyle === 'hands-on' || learningStyle === 'balanced')) {
+          const tool = resources.tools[0];
+          steps.push({
+            type: 'TOOL',
+            title: tool.title,
+            description: 'Practice with professional PM tool',
+            platform: tool.platform,
+            duration: tool.duration,
+            week: currentWeek + Math.floor(weeksPerGap / 2),
+            skill: skillName,
+            url: tool.url || '#',
+            typeBadgeClass: typeBadges['TOOL'],
+            skillBadgeClass: skillBadges[gap.id] || 'bg-stone-800 text-stone-400'
+          });
+          totalHours += parseFloat(tool.duration) || 1;
+          toolCount++;
+        }
+
+        // Add simulation (if available and learning style allows)
+        if (resources.simulations.length > 0 && (learningStyle === 'hands-on' || learningStyle === 'balanced')) {
+          const sim = resources.simulations[0];
+          steps.push({
+            type: 'SIMULATE',
+            title: sim.title,
+            description: 'Apply skills in realistic scenario simulation',
+            platform: sim.platform,
+            duration: sim.duration,
+            week: currentWeek + weeksPerGap - 1,
+            skill: skillName,
+            url: sim.url || '#',
+            typeBadgeClass: typeBadges['SIMULATE'],
+            skillBadgeClass: skillBadges[gap.id] || 'bg-stone-800 text-stone-400'
+          });
+          totalHours += parseFloat(sim.duration) / 60 || 1;
+          simCount++;
+        }
+
+        currentWeek += weeksPerGap;
+      });
+
+      // Add final assessment step
+      steps.push({
+        type: 'ASSESS',
+        title: 'Reassess Your Skills',
+        description: 'Retake the assessment to measure your progress',
+        platform: 'apexvalue.com',
+        duration: '10 min',
+        week: weeks,
+        skill: 'All',
+        url: 'https://apexvalue.com/assessment',
+        typeBadgeClass: typeBadges['ASSESS'],
+        skillBadgeClass: 'bg-orange-100 text-orange-600'
+      });
+
+      // Sort by week
+      steps.sort((a, b) => a.week - b.week);
+
+      return {
+        phases,
+        steps: steps.slice(0, 12), // Limit to 12 steps for display
+        totalHours: Math.round(totalHours),
+        counts: {
+          courses: courseCount,
+          simulations: simCount,
+          tools: toolCount
+        }
+      };
+    }
+
+    // Event handlers
+    function goToStep(step) { state.currentStep = step; render(); window.scrollTo(0, 0); }
+    function toggleCert(cert) {
+      if (state.profile.certifications.includes(cert)) {
+        state.profile.certifications = state.profile.certifications.filter(c => c !== cert);
+      } else {
+        state.profile.certifications.push(cert);
+      }
+      render();
+    }
+    function setScore(skillId, value) { 
+      state.scores[skillId] = value; 
+      render(); 
+    }
+    
+    function toggleExpanded(skillId) {
+      state.expandedSkill = state.expandedSkill === skillId ? null : skillId;
+      render();
+    }
+
+    // Update profile without full re-render to preserve cursor position
+    function updateProfile(field, value) {
+      state.profile[field] = value;
+      // Just update button state without re-rendering entire form
+      const isValid = state.profile.name && state.profile.title && state.profile.experience;
+      const btn = document.getElementById('continueBtn');
+      if (btn) {
+        btn.disabled = !isValid;
+        btn.className = `font-bold py-3 px-8 rounded-lg transition-colors ${
+          isValid ? 'bg-orange-500 hover:bg-orange-600 text-white' : 'bg-stone-200 text-stone-400 cursor-not-allowed'
+        }`;
+      }
+    }
+
+    function saveProfileAndNext() {
+      state.profile.name = document.getElementById('name').value;
+      state.profile.title = document.getElementById('title').value;
+      state.profile.organization = document.getElementById('organization').value;
+      state.profile.experience = document.getElementById('experience').value;
+      goToStep('assessment');
+    }
+
+    async function generateReport() {
+      const btn = document.getElementById('downloadBtn');
+      btn.innerHTML = '<span class="flex items-center justify-center gap-2"><svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Generating PDF...</span>';
+      btn.disabled = true;
+      
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+        const pageWidth = 210;
+        const pageHeight = 297;
+        const margin = 20;
+        const contentWidth = pageWidth - (margin * 2);
+        
+        // Colors (RGB arrays)
+        const colors = {
+          dark: [26, 26, 26],
+          orange: [232, 93, 4],
+          emerald: [5, 150, 105],
+          amber: [217, 119, 6],
+          rose: [220, 38, 38],
+          gray: [120, 113, 108],
+          lightGray: [245, 245, 244],
+          white: [255, 255, 255]
+        };
+
+        // Get data
+        const overallScore = calculateOverallScore();
+        const gaps = getGaps();
+        const topGaps = gaps.slice(0, 4);
+        const roadmap = generateRoadmap(gaps, state.objectives.timeline, state.objectives.learningStyle);
+        
+        const goalLabels = {
+          'exploring': { label: 'Exploring PM', target: '60%' },
+          'support': { label: 'Supporting Role', target: '60%' },
+          'job': { label: 'PM Career', target: '80%' },
+          'pmp': { label: 'PMP Certification', target: '90%+' },
+          'improve': { label: 'Skill Improvement', target: '80%' }
+        };
+        const currentGoal = goalLabels[state.objectives.goal] || goalLabels['job'];
+
+        // ============ PAGE 1: COVER ============
+        // Dark header block
+        doc.setFillColor(...colors.dark);
+        doc.rect(0, 0, pageWidth, 80, 'F');
+        
+        // Title
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(28);
+        doc.setTextColor(...colors.white);
+        doc.text('PROJECT MANAGER', margin, 35);
+        doc.setFontSize(28);
+        doc.text('SKILLS ASSESSMENT', margin, 50);
+        
+        // Orange accent line
+        doc.setFillColor(...colors.orange);
+        doc.rect(margin, 58, 50, 3, 'F');
+        
+        // Date
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(168, 162, 158);
+        doc.text(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), pageWidth - margin, 70, { align: 'right' });
+
+        // Profile section
+        let y = 100;
+        doc.setFontSize(11);
+        doc.setTextColor(...colors.gray);
+        doc.setFont('helvetica', 'bold');
+        doc.text('PREPARED FOR', margin, y);
+        
+        y += 12;
+        doc.setFontSize(22);
+        doc.setTextColor(...colors.dark);
+        doc.text(state.profile.name, margin, y);
+        
+        y += 10;
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...colors.gray);
+        doc.text(`${state.profile.title}${state.profile.organization ? ' at ' + state.profile.organization : ''}`, margin, y);
+        
+        y += 7;
+        doc.text(`Experience: ${state.profile.experience} years  |  Goal: ${currentGoal.label} (Target: ${currentGoal.target})`, margin, y);
+
+        // Summary boxes
+        y = 150;
+        const boxWidth = (contentWidth - 15) / 4;
+        const boxHeight = 32;
+        
+        const summaryData = [
+          { label: 'Overall Score', value: `${overallScore}%`, color: overallScore >= 70 ? colors.emerald : overallScore >= 50 ? colors.amber : colors.rose },
+          { label: 'Skill Gaps', value: gaps.length.toString(), color: colors.orange },
+          { label: 'Week Plan', value: state.objectives.timeline, color: colors.dark },
+          { label: 'Resources', value: (roadmap.counts.courses + roadmap.counts.simulations + roadmap.counts.tools).toString(), color: colors.emerald }
+        ];
+        
+        summaryData.forEach((item, i) => {
+          const x = margin + (i * (boxWidth + 5));
+          doc.setFillColor(...colors.lightGray);
+          doc.roundedRect(x, y, boxWidth, boxHeight, 2, 2, 'F');
+          
+          doc.setFontSize(18);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(...item.color);
+          doc.text(item.value, x + boxWidth/2, y + 14, { align: 'center' });
+          
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(...colors.gray);
+          doc.text(item.label, x + boxWidth/2, y + 24, { align: 'center' });
+        });
+
+        // Priority gaps section
+        y = 200;
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...colors.dark);
+        doc.text('PRIORITY DEVELOPMENT AREAS', margin, y);
+        
+        y += 12;
+        if (topGaps.length > 0) {
+          topGaps.forEach((gap, i) => {
+            doc.setFillColor(...(i === 0 ? colors.rose : colors.amber));
+            doc.circle(margin + 3, y + 2, 3, 'F');
+            
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(...colors.dark);
+            doc.text(gap.name, margin + 10, y + 4);
+            
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9);
+            doc.setTextColor(...colors.gray);
+            doc.text(`Current: ${gap.current * 20}%  ->  Target: ${gap.target * 20}%`, margin + 10, y + 11);
+            
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(...(i === 0 ? colors.rose : colors.amber));
+            doc.text(`+${gap.gap * 20}%`, pageWidth - margin, y + 4, { align: 'right' });
+            
+            y += 18;
+          });
+        } else {
+          doc.setFontSize(10);
+          doc.setTextColor(...colors.emerald);
+          doc.text('Congratulations! You have met your target in all areas.', margin, y + 4);
+        }
+
+        // Footer
+        doc.setFillColor(...colors.orange);
+        doc.rect(0, pageHeight - 18, pageWidth, 18, 'F');
+        doc.setFontSize(9);
+        doc.setTextColor(...colors.white);
+        doc.text('Generated by ApexValue PMO Advisor', margin, pageHeight - 7);
+        doc.text('apexvalue.com', pageWidth - margin, pageHeight - 7, { align: 'right' });
+
+        // ============ PAGE 2: SKILLS BREAKDOWN ============
+        doc.addPage();
+        
+        // Header
+        doc.setFillColor(...colors.dark);
+        doc.rect(0, 0, pageWidth, 22, 'F');
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...colors.white);
+        doc.text('SKILLS BREAKDOWN', margin, 15);
+        
+        y = 35;
+        
+        // Skills with bars
+        SKILL_AREAS.forEach((skill) => {
+          const score = state.scores[skill.id] || 0;
+          const percentage = score * 20;
+          const barColor = score >= 4 ? colors.emerald : score >= 3 ? colors.amber : colors.rose;
+          
+          // Skill name
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(...colors.dark);
+          doc.text(skill.name, margin, y + 3);
+          
+          // Background bar
+          doc.setFillColor(...colors.lightGray);
+          doc.roundedRect(margin + 52, y, 100, 5, 1, 1, 'F');
+          
+          // Progress bar
+          if (percentage > 0) {
+            doc.setFillColor(...barColor);
+            doc.roundedRect(margin + 52, y, percentage, 5, 1, 1, 'F');
+          }
+          
+          // Percentage
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(...barColor);
+          doc.text(`${percentage}%`, pageWidth - margin, y + 3, { align: 'right' });
+          
+          y += 11;
+        });
+
+        // Legend
+        y += 8;
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...colors.gray);
+        
+        const legendItems = [
+          { color: colors.emerald, label: '80-100% Proficient' },
+          { color: colors.amber, label: '60-79% Intermediate' },
+          { color: colors.rose, label: '0-59% Needs Work' }
+        ];
+        
+        doc.text('Legend:', margin, y);
+        legendItems.forEach((item, i) => {
+          const x = margin + 18 + (i * 45);
+          doc.setFillColor(...item.color);
+          doc.rect(x, y - 3, 6, 4, 'F');
+          doc.setTextColor(...colors.gray);
+          doc.text(item.label, x + 8, y);
+        });
+
+        // Page footer
+        doc.setFillColor(...colors.orange);
+        doc.rect(0, pageHeight - 12, pageWidth, 12, 'F');
+        doc.setFontSize(8);
+        doc.setTextColor(...colors.white);
+        doc.text('Page 2 of 4', pageWidth / 2, pageHeight - 5, { align: 'center' });
+
+        // ============ PAGE 3: ROADMAP ============
+        doc.addPage();
+        
+        // Header
+        doc.setFillColor(...colors.dark);
+        doc.rect(0, 0, pageWidth, 22, 'F');
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...colors.white);
+        doc.text(`YOUR ${state.objectives.timeline}-WEEK DEVELOPMENT ROADMAP`, margin, 15);
+        
+        y = 35;
+        
+        // Phase timeline
+        const phaseColors = [colors.emerald, [59, 130, 246], [147, 51, 234], colors.orange];
+        const phaseWidth = contentWidth / 4;
+        
+        roadmap.phases.forEach((phase, i) => {
+          const x = margin + (i * phaseWidth);
+          doc.setFillColor(...phaseColors[i]);
+          doc.rect(x, y, phaseWidth - 3, 3, 'F');
+          
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(...colors.dark);
+          doc.text(phase.name, x, y + 8);
+          
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(...colors.gray);
+          doc.text(`Weeks ${phase.weeks}`, x, y + 13);
+        });
+        
+        y += 22;
+        
+        // Roadmap steps
+        const typeColors = {
+          'WATCH': [59, 130, 246],
+          'COURSE': colors.emerald,
+          'TOOL': [6, 182, 212],
+          'SIMULATE': [147, 51, 234],
+          'APPLY': colors.amber,
+          'ASSESS': colors.orange
+        };
+        
+        roadmap.steps.slice(0, 10).forEach((step, i) => {
+          // Step number circle
+          doc.setFillColor(...colors.dark);
+          doc.circle(margin + 4, y + 3, 3.5, 'F');
+          doc.setFontSize(7);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(...colors.white);
+          doc.text((i + 1).toString(), margin + 4, y + 4.5, { align: 'center' });
+          
+          // Type badge
+          const badgeColor = typeColors[step.type] || colors.gray;
+          doc.setFillColor(...badgeColor);
+          doc.roundedRect(margin + 11, y, 16, 4.5, 1, 1, 'F');
+          doc.setFontSize(6);
+          doc.setTextColor(...colors.white);
+          doc.text(step.type, margin + 19, y + 3.2, { align: 'center' });
+          
+          // Title (with clickable link using textWithLink)
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(...colors.orange);
+          const titleText = step.title;
+          const titleX = margin + 30;
+          const titleY = y + 3.5;
+          doc.text(titleText, titleX, titleY);
+          
+          // Add underline to indicate it's a link
+          const titleWidth = doc.getTextWidth(titleText);
+          doc.setDrawColor(...colors.orange);
+          doc.setLineWidth(0.2);
+          doc.line(titleX, titleY + 0.5, titleX + titleWidth, titleY + 0.5);
+          
+          // Create clickable annotation
+          doc.link(titleX, y - 1, titleWidth + 5, 7, { url: step.url });
+          
+          // Details
+          doc.setFontSize(7);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(...colors.gray);
+          doc.text(`${step.platform}  |  ${step.duration}  |  Week ${step.week}`, margin + 30, y + 9);
+          
+          y += 14;
+        });
+        
+        // Summary box
+        y = pageHeight - 48;
+        doc.setFillColor(...colors.lightGray);
+        doc.roundedRect(margin, y, contentWidth, 22, 2, 2, 'F');
+        
+        const roadmapSummary = [
+          { label: 'Courses', value: roadmap.counts.courses, color: colors.emerald },
+          { label: 'Simulations', value: roadmap.counts.simulations, color: [147, 51, 234] },
+          { label: 'Tools', value: roadmap.counts.tools, color: [6, 182, 212] },
+          { label: 'Total Hours', value: `~${roadmap.totalHours}`, color: colors.dark }
+        ];
+        
+        const sumItemWidth = contentWidth / 4;
+        roadmapSummary.forEach((item, i) => {
+          const x = margin + (i * sumItemWidth) + (sumItemWidth / 2);
+          doc.setFontSize(14);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(...item.color);
+          doc.text(item.value.toString(), x, y + 10, { align: 'center' });
+          
+          doc.setFontSize(7);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(...colors.gray);
+          doc.text(item.label, x, y + 16, { align: 'center' });
+        });
+
+        // Page footer
+        doc.setFillColor(...colors.orange);
+        doc.rect(0, pageHeight - 12, pageWidth, 12, 'F');
+        doc.setFontSize(8);
+        doc.setTextColor(...colors.white);
+        doc.text('Page 3 of 4', pageWidth / 2, pageHeight - 5, { align: 'center' });
+
+        // ============ PAGE 4: RESOURCES ============
+        doc.addPage();
+        
+        // Header
+        doc.setFillColor(...colors.dark);
+        doc.rect(0, 0, pageWidth, 22, 'F');
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...colors.white);
+        doc.text('RECOMMENDED RESOURCES', margin, 15);
+        
+        y = 35;
+        
+        // Platform sections
+        const platforms = [
+          {
+            name: 'Training Courses',
+            url: 'the-executive-producer.thinkific.com',
+            fullUrl: 'https://the-executive-producer.thinkific.com',
+            color: colors.emerald,
+            items: ['PM Fundamentals (13 hrs)', 'Initiation & Scope Management (2 hrs)', 'Time & Cost Management (2.5 hrs)', 'Quality & Risk Management (2 hrs)', 'Communication & Soft Skills (2.5 hrs)']
+          },
+          {
+            name: 'Business Simulations',
+            url: 'simulations-six.vercel.app',
+            fullUrl: 'https://simulations-six.vercel.app',
+            color: [147, 51, 234],
+            items: ['Project Apex: Tech Startup', 'Project Apex: Construction', 'Project Apex: R&D Innovation', 'Budget Crisis (Coming Soon)']
+          },
+          {
+            name: 'PM Tools & Templates',
+            url: 'projectmanagertool.com',
+            fullUrl: 'https://projectmanagertool.com',
+            color: [6, 182, 212],
+            items: ['CharterPro - Project Charter', 'Risk Register - Risk Assessment', 'ROI Calculator - Investment Analysis', 'WBS Builder (Coming Soon)', 'Gantt Chart Builder (Coming Soon)']
+          }
+        ];
+        
+        platforms.forEach(platform => {
+          // Platform header bar
+          doc.setFillColor(...platform.color);
+          doc.roundedRect(margin, y, contentWidth, 8, 1, 1, 'F');
+          
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(...colors.white);
+          doc.text(platform.name, margin + 4, y + 5.5);
+          
+          // URL with clickable link
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'normal');
+          const urlText = platform.url;
+          const urlWidth = doc.getTextWidth(urlText);
+          doc.text(urlText, pageWidth - margin - 4, y + 5.5, { align: 'right' });
+          doc.link(pageWidth - margin - 4 - urlWidth, y, urlWidth, 8, { url: platform.fullUrl });
+          
+          y += 12;
+          
+          // Items
+          platform.items.forEach(item => {
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(...colors.dark);
+            doc.text(`•  ${item}`, margin + 4, y);
+            y += 6;
+          });
+          
+          y += 6;
+        });
+
+        // CTA box
+        y = pageHeight - 55;
+        doc.setFillColor(...colors.orange);
+        doc.roundedRect(margin, y, contentWidth, 30, 2, 2, 'F');
+        
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...colors.white);
+        doc.text('Start Your Learning Journey Today', margin + 8, y + 12);
+        
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Visit apexvalue.com to access your personalized resources and track progress.', margin + 8, y + 22);
+
+        // Page footer
+        doc.setFillColor(...colors.dark);
+        doc.rect(0, pageHeight - 12, pageWidth, 12, 'F');
+        doc.setFontSize(8);
+        doc.setTextColor(...colors.white);
+        doc.text('Page 4 of 4  |  Questions? Contact support@apexvalue.com', pageWidth / 2, pageHeight - 5, { align: 'center' });
+
+        // Save the PDF
+        const fileName = `PM_Skills_Report_${state.profile.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+        doc.save(fileName);
+        
+      } catch (error) {
+        console.error('PDF generation error:', error);
+        alert('Error generating PDF: ' + error.message);
+      }
+      
+      btn.innerHTML = '📄 Download PDF Report';
+      btn.disabled = false;
+    }
+
+    // Initialize
+    render();
+  </script>
+</body>
+</html>

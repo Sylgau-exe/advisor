@@ -511,7 +511,7 @@
                 <p class="hero-subtitle">Transform your PMO with intelligent analysis, strategic recommendations, and professional deliverables—all built on industry best practices.</p>
                 <div class="hero-cta">
                     <button class="btn btn-primary btn-large" onclick="showView('register')">Get Started Free</button>
-                    <a href="/assessment.html" class="btn btn-secondary btn-large" style="background: #f97316; border-color: #f97316; color: white;">📊 Skills Assessment</a>
+                    <button class="btn btn-secondary btn-large" onclick="showView('login')">Sign In</button>
                 </div>
             </section>
 
@@ -523,20 +523,6 @@
                     <div class="step"><div class="step-number">2</div><h4>Create Your Notebook</h4><p>Open NotebookLM and create a new notebook for your PMO consulting workspace.</p></div>
                     <div class="step"><div class="step-number">3</div><h4>Add Your Sources</h4><p>Import our knowledge base, then add your own files—charters, SOPs, templates.</p></div>
                     <div class="step"><div class="step-number">4</div><h4>Start Consulting</h4><p>Ask questions, generate slide decks, and get AI-powered recommendations.</p></div>
-                </div>
-            </section>
-
-            <section class="steps-section">
-                <h2>📊 Free Skills Assessment</h2>
-                <p class="subtitle">Discover your PM skill gaps and get a personalized development roadmap</p>
-                <div class="steps">
-                    <div class="step"><div class="step-number">📋</div><h4>13 Skill Areas</h4><p>Rate yourself across all PMBOK knowledge areas with clear criteria.</p></div>
-                    <div class="step"><div class="step-number">🎯</div><h4>Goal-Based Targets</h4><p>Different proficiency targets based on your career objectives.</p></div>
-                    <div class="step"><div class="step-number">🗺️</div><h4>Custom Roadmap</h4><p>Get a step-by-step learning plan with courses, tools, and simulations.</p></div>
-                    <div class="step"><div class="step-number">📄</div><h4>PDF Report</h4><p>Download your personalized report to track progress.</p></div>
-                </div>
-                <div style="text-align: center; margin-top: 32px;">
-                    <a href="/assessment.html" class="btn btn-primary btn-large" style="background: #f97316; border-color: #f97316;">Start Free Assessment →</a>
                 </div>
             </section>
 
@@ -607,12 +593,6 @@
                             <li>Agile Leadership: Secret Practices & Tips</li>
                         </ul>
                         <div id="knowledgeBaseAction"></div>
-                    </div>
-                    <div class="card">
-                        <div class="card-icon" style="background: rgba(249, 115, 22, 0.15);">📊</div>
-                        <h3>Skills Assessment</h3>
-                        <p>Discover your PM skill gaps and get a personalized development roadmap with curated resources.</p>
-                        <a href="/assessment.html" class="btn btn-primary" style="background: #f97316; border-color: #f97316;">Take Assessment →</a>
                     </div>
                     <div class="card">
                         <div class="card-icon">🧠</div>
@@ -760,7 +740,6 @@
             const actions = document.getElementById('headerActions');
             if (currentUser) {
                 actions.innerHTML = `
-                    <a href="/assessment.html" class="btn btn-ghost">📊 Assessment</a>
                     <div class="user-info">
                         <span class="name">${currentUser.name}</span>
                         <span class="badge ${currentUser.has_purchased ? 'badge-pro' : 'badge-free'}">${currentUser.has_purchased ? 'PRO' : 'FREE'}</span>
@@ -769,7 +748,6 @@
                 `;
             } else {
                 actions.innerHTML = `
-                    <a href="/assessment.html" class="btn btn-ghost">📊 Assessment</a>
                     <button class="btn btn-ghost" onclick="showView('login')">Sign In</button>
                     <button class="btn btn-primary" onclick="showView('register')">Get Started</button>
                 `;
