@@ -872,6 +872,15 @@
             try {
                 const data = await apiRequest('/auth/me');
                 currentUser = data.user;
+                
+                // Check for redirect after auth
+                const redirect = localStorage.getItem('redirect_after_auth');
+                if (redirect) {
+                    localStorage.removeItem('redirect_after_auth');
+                    window.location.href = redirect;
+                    return;
+                }
+                
                 showView('dashboard');
                 updateDashboard();
             } catch (error) {

@@ -49,13 +49,76 @@
         </div>
         ApexValue
       </a>
-      <a href="/" class="text-stone-400 hover:text-white text-sm transition-colors">← Back to Platform</a>
+      <div id="headerUserInfo" class="flex items-center gap-4">
+        <a href="/" class="text-stone-400 hover:text-white text-sm transition-colors">← Back to Platform</a>
+      </div>
     </div>
   </header>
+  
+  <!-- Login Required Modal -->
+  <div id="authModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" style="display: none;">
+    <div class="bg-stone-800 border border-stone-700 rounded-2xl p-8 max-w-md w-full">
+      <div class="text-center mb-6">
+        <div class="text-5xl mb-4">🔐</div>
+        <h2 class="text-2xl font-bold text-white mb-2">Account Required</h2>
+        <p class="text-stone-300">Create a free account to access the Skills Assessment and save your results.</p>
+      </div>
+      
+      <div class="space-y-3">
+        <a href="/#register" onclick="localStorage.setItem('redirect_after_auth', '/assessment.html')" class="block w-full py-3 px-6 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-lg text-center transition-colors">
+          Create Free Account
+        </a>
+        <a href="/#login" onclick="localStorage.setItem('redirect_after_auth', '/assessment.html')" class="block w-full py-3 px-6 bg-stone-700 hover:bg-stone-600 text-white font-bold rounded-lg text-center transition-colors">
+          Sign In
+        </a>
+      </div>
+      
+      <p class="text-center text-stone-500 text-sm mt-6">
+        Free forever • No credit card required
+      </p>
+    </div>
+  </div>
   
   <div id="app"></div>
 
   <script>
+    // Auth check
+    let currentUser = null;
+    const authToken = localStorage.getItem('auth_token');
+    
+    async function checkAuth() {
+      if (!authToken) {
+        document.getElementById('authModal').style.display = 'flex';
+        return false;
+      }
+      
+      try {
+        const response = await fetch('/api/auth/me', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (!response.ok) throw new Error('Not authenticated');
+        const data = await response.json();
+        currentUser = data.user;
+        
+        // Update header with user info
+        document.getElementById('headerUserInfo').innerHTML = `
+          <span class="text-stone-400 text-sm">Welcome, <span class="text-white font-medium">${currentUser.name}</span></span>
+          <a href="/" class="text-stone-400 hover:text-white text-sm transition-colors">← Dashboard</a>
+        `;
+        
+        // Pre-fill profile name
+        if (currentUser.name && !state.profile.name) {
+          state.profile.name = currentUser.name;
+        }
+        
+        return true;
+      } catch (e) {
+        localStorage.removeItem('auth_token');
+        document.getElementById('authModal').style.display = 'flex';
+        return false;
+      }
+    }
+    
     // State management
     const state = {
       currentStep: 'welcome',
@@ -693,10 +756,10 @@
         <header class="bg-stone-900 text-white py-4 px-6">
           <div class="max-w-4xl mx-auto flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center font-bold text-xl">A</div>
+              <div class="w-10 h-10 bg-orange-900/300 rounded-lg flex items-center justify-center font-bold text-xl">A</div>
               <div>
                 <div class="font-bold">ApexValue</div>
-                <div class="text-xs text-stone-400">PMO Advisor</div>
+                <div class="text-xs text-stone-300">PMO Advisor</div>
               </div>
             </div>
             ${state.currentStep !== 'welcome' ? renderProgressIndicator() : ''}
@@ -715,9 +778,9 @@
         <div class="flex items-center gap-2">
           ${steps.map((step, i) => `
             <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-              i <= currentIndex ? 'bg-orange-500 text-white' : 'bg-stone-700 text-stone-400'
+              i <= currentIndex ? 'bg-orange-900/300 text-white' : 'bg-stone-700 text-stone-300'
             }">${i + 1}</div>
-            ${i < steps.length - 1 ? `<div class="w-8 h-0.5 ${i < currentIndex ? 'bg-orange-500' : 'bg-stone-700'}"></div>` : ''}
+            ${i < steps.length - 1 ? `<div class="w-8 h-0.5 ${i < currentIndex ? 'bg-orange-900/300' : 'bg-stone-700'}"></div>` : ''}
           `).join('')}
         </div>
       `;
@@ -741,7 +804,7 @@
           <h1 class="text-5xl font-black text-white mb-2">SKILLS</h1>
           <h1 class="text-5xl font-black text-orange-500 mb-8">ASSESSMENT</h1>
           
-          <p class="text-xl text-stone-400 mb-8 max-w-2xl mx-auto">
+          <p class="text-xl text-stone-300 mb-8 max-w-2xl mx-auto">
             Discover your PM skill gaps and get a personalized development plan 
             tailored to your career goals.
           </p>
@@ -749,35 +812,35 @@
           <div class="flex justify-center gap-8 mb-12">
             <div class="text-center">
               <div class="text-3xl font-bold text-white">13</div>
-              <div class="text-sm text-stone-500">Skill Areas</div>
+              <div class="text-sm text-stone-400">Skill Areas</div>
             </div>
             <div class="text-center">
               <div class="text-3xl font-bold text-white">5</div>
-              <div class="text-sm text-stone-500">Minutes</div>
+              <div class="text-sm text-stone-400">Minutes</div>
             </div>
             <div class="text-center">
               <div class="text-3xl font-bold text-white">1</div>
-              <div class="text-sm text-stone-500">Custom Roadmap</div>
+              <div class="text-sm text-stone-400">Custom Roadmap</div>
             </div>
           </div>
 
-          <button onclick="goToStep('profile')" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-12 rounded-lg text-lg transition-colors">
+          <button onclick="goToStep('profile')" class="bg-orange-900/300 hover:bg-orange-600 text-white font-bold py-4 px-12 rounded-lg text-lg transition-colors">
             Start Assessment →
           </button>
 
-          <p class="mt-6 text-sm text-stone-500">Free • No account required • Instant results</p>
+          <p class="mt-6 text-sm text-stone-400">Free • No account required • Instant results</p>
           
-          <div class="mt-12 bg-stone-800 rounded-xl p-6 max-w-xl mx-auto text-left border border-stone-700">
+          <div class="mt-12 bg-stone-800/90 rounded-xl p-6 max-w-xl mx-auto text-left border border-stone-700">
             <h3 class="font-bold text-white mb-3 flex items-center gap-2">
               <span class="text-orange-500">📋</span> What This Assessment Covers
             </h3>
-            <div class="space-y-2 text-sm text-stone-400">
+            <div class="space-y-2 text-sm text-stone-300">
               <p>• <strong class="text-white">Traditional Project Management</strong> skills aligned with PMBOK</p>
               <p>• All 13 PM knowledge areas from initiation to closing</p>
               <p>• Personalized roadmap based on YOUR career goals</p>
               <p>• Resources from courses, simulations, and tools</p>
             </div>
-            <div class="mt-4 pt-4 border-t border-stone-700 text-xs text-stone-500">
+            <div class="mt-4 pt-4 border-t border-stone-700 text-xs text-stone-400">
               <strong>Note:</strong> This is for Project Managers, not Scrum Masters or Agile Coaches. 
               Agile knowledge is included as one skill area PMs should understand.
             </div>
@@ -793,9 +856,9 @@
       return `
         <div>
           <h2 class="text-3xl font-bold text-white mb-2">About You</h2>
-          <p class="text-stone-400 mb-8">Help us personalize your development roadmap.</p>
+          <p class="text-stone-300 mb-8">Help us personalize your development roadmap.</p>
 
-          <div class="bg-stone-800 rounded-xl p-8 shadow-sm border border-stone-700">
+          <div class="bg-stone-800/90 rounded-xl p-8 shadow-sm border border-stone-700">
             <div class="grid gap-6">
               <div>
                 <label class="block text-sm font-medium text-stone-300 mb-2">Full Name *</label>
@@ -841,8 +904,8 @@
                   ${certs.map(cert => `
                     <button onclick="toggleCert('${cert}')" class="px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                       state.profile.certifications.includes(cert)
-                        ? 'bg-orange-500 text-white'
-                        : 'bg-stone-800 text-stone-400 hover:bg-stone-200'
+                        ? 'bg-orange-900/300 text-white'
+                        : 'bg-stone-800/90 text-stone-300 hover:bg-stone-200'
                     }">${cert}</button>
                   `).join('')}
                 </div>
@@ -851,10 +914,10 @@
           </div>
 
           <div class="flex justify-between mt-8">
-            <button onclick="goToStep('welcome')" class="text-stone-400 hover:text-white font-medium">← Back</button>
+            <button onclick="goToStep('welcome')" class="text-stone-300 hover:text-white font-medium">← Back</button>
             <button onclick="goToStep('objectives')" id="continueBtn" ${!isValid ? 'disabled' : ''} 
               class="font-bold py-3 px-8 rounded-lg transition-colors ${
-                isValid ? 'bg-orange-500 hover:bg-orange-600 text-white' : 'bg-stone-200 text-stone-400 cursor-not-allowed'
+                isValid ? 'bg-orange-900/300 hover:bg-orange-600 text-white' : 'bg-stone-700 text-stone-500 cursor-not-allowed'
               }">Continue →</button>
           </div>
         </div>
@@ -871,16 +934,16 @@
           <div class="flex justify-between items-start mb-4">
             <div>
               <h2 class="text-3xl font-bold text-white mb-2">Skills Assessment</h2>
-              <p class="text-stone-400">Rate your current proficiency in each area.</p>
+              <p class="text-stone-300">Rate your current proficiency in each area.</p>
             </div>
             <div class="text-right">
               <div class="text-2xl font-bold text-orange-500">${completed}/13</div>
-              <div class="text-sm text-stone-500">Completed</div>
+              <div class="text-sm text-stone-400">Completed</div>
             </div>
           </div>
 
           <!-- Instructions -->
-          <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+          <div class="bg-orange-900/30 border border-orange-700 rounded-lg p-4 mb-6">
             <div class="flex items-start gap-3">
               <span class="text-orange-500 text-xl">💡</span>
               <div class="text-sm text-stone-300">
@@ -891,7 +954,7 @@
           </div>
 
           <div class="w-full h-2 bg-stone-200 rounded-full mb-6">
-            <div class="h-full bg-orange-500 rounded-full transition-all duration-300" style="width: ${progress}%"></div>
+            <div class="h-full bg-orange-900/300 rounded-full transition-all duration-300" style="width: ${progress}%"></div>
           </div>
 
           <div class="space-y-4">
@@ -899,10 +962,10 @@
           </div>
 
           <div class="flex justify-between mt-8">
-            <button onclick="goToStep('objectives')" class="text-stone-400 hover:text-white font-medium">← Back</button>
+            <button onclick="goToStep('objectives')" class="text-stone-300 hover:text-white font-medium">← Back</button>
             <button onclick="goToStep('results')" ${!allScored ? 'disabled' : ''}
               class="font-bold py-3 px-8 rounded-lg transition-colors ${
-                allScored ? 'bg-orange-500 hover:bg-orange-600 text-white' : 'bg-stone-200 text-stone-400 cursor-not-allowed'
+                allScored ? 'bg-orange-900/300 hover:bg-orange-600 text-white' : 'bg-stone-700 text-stone-500 cursor-not-allowed'
               }">See My Results →</button>
           </div>
         </div>
@@ -914,8 +977,8 @@
       const currentScore = state.scores[skill.id];
       
       return `
-        <div class="bg-stone-800 rounded-xl border-2 transition-all ${
-          currentScore !== undefined ? 'border-orange-200' : 'border-stone-700'
+        <div class="bg-stone-800/90 rounded-xl border-2 transition-all ${
+          currentScore !== undefined ? 'border-orange-700' : 'border-stone-700'
         }">
           <!-- Skill Header -->
           <div class="p-6">
@@ -924,13 +987,13 @@
                 <span class="w-8 h-8 bg-stone-900 text-white rounded-full flex items-center justify-center text-sm font-bold">${idx + 1}</span>
                 <div>
                   <h3 class="text-lg font-bold text-white">${skill.name}</h3>
-                  <p class="text-sm text-stone-500">${skill.description}</p>
+                  <p class="text-sm text-stone-400">${skill.description}</p>
                 </div>
               </div>
               ${currentScore !== undefined ? `
                 <div class="text-right">
                   <div class="text-2xl font-bold text-orange-500">${currentScore}</div>
-                  <div class="text-xs text-stone-400">${skill.rubric[currentScore].label}</div>
+                  <div class="text-xs text-stone-300">${skill.rubric[currentScore].label}</div>
                 </div>
               ` : ''}
             </div>
@@ -941,8 +1004,8 @@
                 <button onclick="setScore('${skill.id}', ${v})" 
                   class="flex-1 py-3 rounded-lg text-sm font-medium transition-all ${
                     currentScore === v
-                      ? 'bg-orange-500 text-white shadow-lg scale-105'
-                      : 'bg-stone-800 text-stone-400 hover:bg-stone-200'
+                      ? 'bg-orange-900/300 text-white shadow-lg scale-105'
+                      : 'bg-stone-800/90 text-stone-300 hover:bg-stone-200'
                   }">
                   <div class="font-bold">${v}</div>
                   <div class="text-xs opacity-75">${skill.rubric[v].label}</div>
@@ -966,18 +1029,18 @@
                     <div class="flex-shrink-0">
                       <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
                         currentScore === level 
-                          ? 'bg-orange-500 text-white' 
-                          : 'bg-stone-200 text-stone-400'
+                          ? 'bg-orange-900/300 text-white' 
+                          : 'bg-stone-200 text-stone-300'
                       }">
                         ${level}
                       </div>
                     </div>
                     <div class="flex-1">
                       <div class="font-bold text-white mb-1">${skill.rubric[level].label}</div>
-                      <ul class="text-sm text-stone-400 space-y-1">
+                      <ul class="text-sm text-stone-300 space-y-1">
                         ${skill.rubric[level].criteria.map(c => `
                           <li class="flex items-start gap-2">
-                            <span class="text-stone-400 mt-0.5">•</span>
+                            <span class="text-stone-300 mt-0.5">•</span>
                             <span>${c}</span>
                           </li>
                         `).join('')}
@@ -986,7 +1049,7 @@
                         class="mt-2 text-xs font-medium ${
                           currentScore === level 
                             ? 'text-orange-600' 
-                            : 'text-stone-500 hover:text-orange-600'
+                            : 'text-stone-400 hover:text-orange-600'
                         }">
                         ${currentScore === level ? '✓ Selected' : 'Select this level'}
                       </button>
@@ -1054,23 +1117,23 @@
       return `
         <div>
           <h2 class="text-3xl font-bold text-white mb-2">What's Your Goal?</h2>
-          <p class="text-stone-400 mb-8">This helps us set the right proficiency targets for your assessment.</p>
+          <p class="text-stone-300 mb-8">This helps us set the right proficiency targets for your assessment.</p>
 
           <!-- Goal Selection -->
-          <div class="bg-stone-800 rounded-xl p-6 shadow-sm border border-stone-700 mb-6">
+          <div class="bg-stone-800/90 rounded-xl p-6 shadow-sm border border-stone-700 mb-6">
             <div class="space-y-3">
               ${goals.map(goal => `
                 <button onclick="setObjective('goal', '${goal.value}')" 
                   class="w-full p-4 rounded-xl border-2 text-left transition-all flex items-start gap-4 ${
                     state.objectives.goal === goal.value 
-                      ? 'border-orange-500 bg-orange-50' 
+                      ? 'border-orange-500 bg-orange-900/30' 
                       : 'border-stone-700 hover:border-stone-600'
                   }">
                   <div class="text-3xl">${goal.icon}</div>
                   <div class="flex-1">
                     <div class="font-bold text-white">${goal.label}</div>
-                    <div class="text-sm text-stone-400">${goal.desc}</div>
-                    <div class="text-xs text-stone-400 mt-1">${goal.detail}</div>
+                    <div class="text-sm text-stone-300">${goal.desc}</div>
+                    <div class="text-xs text-stone-300 mt-1">${goal.detail}</div>
                   </div>
                   <div class="flex flex-col items-end">
                     ${state.objectives.goal === goal.value ? `
@@ -1080,7 +1143,7 @@
                         </svg>
                       </div>
                     ` : ''}
-                    <div class="text-xs text-stone-400 mt-1">Target: ${goal.targetLabel}</div>
+                    <div class="text-xs text-stone-300 mt-1">Target: ${goal.targetLabel}</div>
                   </div>
                 </button>
               `).join('')}
@@ -1113,7 +1176,7 @@
           ` : ''}
 
           <!-- Note about scope -->
-          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div class="bg-blue-900/30 border border-blue-700 rounded-lg p-4 mb-6">
             <div class="flex items-start gap-3">
               <span class="text-blue-500 text-xl">ℹ️</span>
               <div class="text-sm text-stone-300">
@@ -1124,12 +1187,12 @@
           </div>
 
           <div class="flex justify-between mt-8">
-            <button onclick="goToStep('profile')" class="text-stone-400 hover:text-white font-medium">← Back</button>
+            <button onclick="goToStep('profile')" class="text-stone-300 hover:text-white font-medium">← Back</button>
             <button onclick="goToStep('assessment')" ${!state.objectives.goal ? 'disabled' : ''}
               class="font-bold py-3 px-8 rounded-lg transition-colors ${
                 state.objectives.goal 
-                  ? 'bg-orange-500 hover:bg-orange-600 text-white' 
-                  : 'bg-stone-200 text-stone-400 cursor-not-allowed'
+                  ? 'bg-orange-900/300 hover:bg-orange-600 text-white' 
+                  : 'bg-stone-700 text-stone-500 cursor-not-allowed'
               }">Continue to Assessment →</button>
           </div>
         </div>
@@ -1154,7 +1217,7 @@
         .filter(s => s.score >= 4).sort((a, b) => b.score - a.score).slice(0, 3);
 
       const getScoreColor = (score) => score >= 80 ? 'text-emerald-500' : score >= 60 ? 'text-amber-500' : 'text-rose-500';
-      const getBarColor = (score) => score >= 4 ? 'bg-emerald-500' : score >= 3 ? 'bg-amber-500' : 'bg-rose-500';
+      const getBarColor = (score) => score >= 4 ? 'bg-emerald-900/300' : score >= 3 ? 'bg-amber-900/300' : 'bg-rose-900/300';
 
       // Generate roadmap based on gaps and objectives
       const roadmap = generateRoadmap(gaps, state.objectives.timeline, state.objectives.learningStyle);
@@ -1175,47 +1238,47 @@
             <div class="flex justify-between items-start mb-4">
               <div>
                 <h2 class="text-3xl font-bold text-white mb-2">Your Results</h2>
-                <p class="text-stone-400">Assessment for ${state.profile.name}</p>
+                <p class="text-stone-300">Assessment for ${state.profile.name}</p>
               </div>
               <div class="text-right">
                 <div class="text-3xl">${currentGoal.icon}</div>
-                <div class="text-sm text-stone-400">Goal: ${currentGoal.label}</div>
+                <div class="text-sm text-stone-300">Goal: ${currentGoal.label}</div>
                 <div class="text-xs text-orange-400">Target: ${currentGoal.target}</div>
               </div>
             </div>
             
             <div class="grid md:grid-cols-4 gap-4 mt-6">
-              <div class="bg-stone-800 rounded-xl p-4">
+              <div class="bg-stone-800/90 rounded-xl p-4">
                 <div class="text-4xl font-black ${getScoreColor(overallScore)}">${overallScore}%</div>
-                <div class="text-sm text-stone-400">Overall Score</div>
+                <div class="text-sm text-stone-300">Overall Score</div>
               </div>
-              <div class="bg-stone-800 rounded-xl p-4">
+              <div class="bg-stone-800/90 rounded-xl p-4">
                 <div class="text-4xl font-black text-orange-500">${gaps.length}</div>
-                <div class="text-sm text-stone-400">Skill Gaps</div>
+                <div class="text-sm text-stone-300">Skill Gaps</div>
               </div>
-              <div class="bg-stone-800 rounded-xl p-4">
+              <div class="bg-stone-800/90 rounded-xl p-4">
                 <div class="text-4xl font-black text-white">${state.objectives.timeline}</div>
-                <div class="text-sm text-stone-400">Week Plan</div>
+                <div class="text-sm text-stone-300">Week Plan</div>
               </div>
-              <div class="bg-stone-800 rounded-xl p-4">
+              <div class="bg-stone-800/90 rounded-xl p-4">
                 <div class="text-4xl font-black text-emerald-500">${strengths.length}</div>
-                <div class="text-sm text-stone-400">Strengths</div>
+                <div class="text-sm text-stone-300">Strengths</div>
               </div>
             </div>
           </div>
 
           <!-- Skills Breakdown -->
-          <div class="bg-stone-800 rounded-xl p-6 shadow-sm border border-stone-700 mb-6">
+          <div class="bg-stone-800/90 rounded-xl p-6 shadow-sm border border-stone-700 mb-6">
             <h3 class="font-bold text-white mb-4">Skills Breakdown</h3>
             <div class="space-y-3">
               ${SKILL_AREAS.map(skill => {
                 const score = state.scores[skill.id] || 0;
-                const barColor = score >= 4 ? 'bg-emerald-500' : score >= 3 ? 'bg-amber-500' : 'bg-rose-500';
+                const barColor = score >= 4 ? 'bg-emerald-900/300' : score >= 3 ? 'bg-amber-900/300' : 'bg-rose-900/300';
                 const textColor = score >= 4 ? 'text-emerald-500' : score >= 3 ? 'text-amber-500' : 'text-rose-500';
                 return `
                   <div class="flex items-center gap-4">
-                    <div class="w-40 text-sm text-stone-400 truncate">${skill.name}</div>
-                    <div class="flex-1 h-3 bg-stone-800 rounded-full overflow-hidden">
+                    <div class="w-40 text-sm text-stone-300 truncate">${skill.name}</div>
+                    <div class="flex-1 h-3 bg-stone-800/90 rounded-full overflow-hidden">
                       <div class="${barColor} h-full transition-all duration-500" style="width: ${score * 20}%"></div>
                     </div>
                     <div class="w-12 text-right font-bold ${textColor}">${score * 20}%</div>
@@ -1226,24 +1289,24 @@
           </div>
 
           <!-- Priority Gaps -->
-          <div class="bg-stone-800 rounded-xl p-6 shadow-sm border border-stone-700 mb-6">
+          <div class="bg-stone-800/90 rounded-xl p-6 shadow-sm border border-stone-700 mb-6">
             <h3 class="font-bold text-white mb-4">Priority Development Areas</h3>
             <div class="space-y-3">
               ${topGaps.length > 0 ? topGaps.map((gap, i) => `
                 <div class="flex items-center justify-between p-4 bg-stone-900 rounded-lg">
                   <div class="flex items-center gap-3">
                     <span class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${
-                      i === 0 ? 'bg-rose-500' : 'bg-amber-500'
+                      i === 0 ? 'bg-rose-900/300' : 'bg-amber-900/300'
                     }">${i + 1}</span>
                     <div>
                       <div class="font-medium text-white">${gap.name}</div>
-                      <div class="text-sm text-stone-500">Current: ${gap.current * 20}% → Target: ${gap.target * 20}%</div>
+                      <div class="text-sm text-stone-400">Current: ${gap.current * 20}% → Target: ${gap.target * 20}%</div>
                     </div>
                   </div>
                   <div class="text-lg font-bold ${i === 0 ? 'text-rose-500' : 'text-amber-500'}">+${gap.gap * 20}%</div>
                 </div>
               `).join('') : `
-                <div class="text-center py-8 text-stone-500">
+                <div class="text-center py-8 text-stone-400">
                   🎉 Amazing! You've already met your target level in all areas!
                 </div>
               `}
@@ -1251,11 +1314,11 @@
           </div>
 
           <!-- Roadmap Preferences -->
-          <div class="bg-stone-800 rounded-xl p-6 shadow-sm border border-stone-700 mb-6">
+          <div class="bg-stone-800/90 rounded-xl p-6 shadow-sm border border-stone-700 mb-6">
             <h3 class="font-bold text-white mb-4">Customize Your Roadmap</h3>
             <div class="grid md:grid-cols-2 gap-6">
               <div>
-                <label class="block text-sm font-medium text-stone-400 mb-2">Timeline</label>
+                <label class="block text-sm font-medium text-stone-300 mb-2">Timeline</label>
                 <div class="flex gap-2">
                   ${[
                     { value: '8', label: '8 wks' },
@@ -1265,8 +1328,8 @@
                     <button onclick="updatePreference('timeline', '${opt.value}')"
                       class="flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
                         state.objectives.timeline === opt.value 
-                          ? 'bg-orange-500 text-white' 
-                          : 'bg-stone-800 text-stone-400 hover:bg-stone-200'
+                          ? 'bg-orange-900/300 text-white' 
+                          : 'bg-stone-800/90 text-stone-300 hover:bg-stone-200'
                       }">
                       ${opt.label}
                     </button>
@@ -1274,7 +1337,7 @@
                 </div>
               </div>
               <div>
-                <label class="block text-sm font-medium text-stone-400 mb-2">Learning Style</label>
+                <label class="block text-sm font-medium text-stone-300 mb-2">Learning Style</label>
                 <div class="flex gap-2">
                   ${[
                     { value: 'video', label: '📹 Video' },
@@ -1284,8 +1347,8 @@
                     <button onclick="updatePreference('learningStyle', '${opt.value}')"
                       class="flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
                         state.objectives.learningStyle === opt.value 
-                          ? 'bg-orange-500 text-white' 
-                          : 'bg-stone-800 text-stone-400 hover:bg-stone-200'
+                          ? 'bg-orange-900/300 text-white' 
+                          : 'bg-stone-800/90 text-stone-300 hover:bg-stone-200'
                       }">
                       ${opt.label}
                     </button>
@@ -1296,10 +1359,10 @@
           </div>
 
           <!-- YOUR PERSONALIZED ROADMAP -->
-          <div class="bg-stone-800 rounded-xl p-6 shadow-sm border border-stone-700 mb-6">
+          <div class="bg-stone-800/90 rounded-xl p-6 shadow-sm border border-stone-700 mb-6">
             <div class="flex items-center justify-between mb-6">
               <h3 class="font-bold text-white text-xl">Your ${state.objectives.timeline}-Week Development Roadmap</h3>
-              <span class="text-sm text-stone-500">${roadmap.totalHours} hours total</span>
+              <span class="text-sm text-stone-400">${roadmap.totalHours} hours total</span>
             </div>
 
             <!-- Phase Timeline -->
@@ -1307,8 +1370,8 @@
               ${roadmap.phases.map((phase, i) => `
                 <div class="flex-1 min-w-[120px]">
                   <div class="h-2 rounded-full ${phase.color}"></div>
-                  <div class="mt-2 text-xs font-medium text-stone-400">${phase.name}</div>
-                  <div class="text-xs text-stone-400">Weeks ${phase.weeks}</div>
+                  <div class="mt-2 text-xs font-medium text-stone-300">${phase.name}</div>
+                  <div class="text-xs text-stone-300">Weeks ${phase.weeks}</div>
                 </div>
               `).join('')}
             </div>
@@ -1316,7 +1379,7 @@
             <!-- Roadmap Steps -->
             <div class="space-y-3">
               ${roadmap.steps.map((step, i) => `
-                <div class="flex items-start gap-4 p-4 rounded-lg ${i % 2 === 0 ? 'bg-stone-900' : 'bg-stone-800'} border border-stone-700 hover:border-stone-600 transition-colors">
+                <div class="flex items-start gap-4 p-4 rounded-lg ${i % 2 === 0 ? 'bg-stone-900' : 'bg-stone-800/90'} border border-stone-700 hover:border-stone-600 transition-colors">
                   <div class="flex-shrink-0">
                     <div class="w-8 h-8 rounded-full bg-stone-900 text-white flex items-center justify-center text-sm font-bold">
                       ${i + 1}
@@ -1329,8 +1392,8 @@
                         ${step.title} →
                       </a>
                     </div>
-                    <div class="text-sm text-stone-500">${step.description}</div>
-                    <div class="flex items-center gap-4 mt-2 text-xs text-stone-400">
+                    <div class="text-sm text-stone-400">${step.description}</div>
+                    <div class="flex items-center gap-4 mt-2 text-xs text-stone-300">
                       <span>📍 ${step.platform}</span>
                       <span>⏱ ${step.duration}</span>
                       <span>📅 Week ${step.week}</span>
@@ -1351,43 +1414,43 @@
               <div class="grid grid-cols-3 gap-4 text-center">
                 <div>
                   <div class="text-2xl font-bold text-emerald-600">${roadmap.counts.courses}</div>
-                  <div class="text-xs text-stone-500">Courses</div>
+                  <div class="text-xs text-stone-400">Courses</div>
                 </div>
                 <div>
                   <div class="text-2xl font-bold text-purple-600">${roadmap.counts.simulations}</div>
-                  <div class="text-xs text-stone-500">Simulations</div>
+                  <div class="text-xs text-stone-400">Simulations</div>
                 </div>
                 <div>
                   <div class="text-2xl font-bold text-cyan-600">${roadmap.counts.tools}</div>
-                  <div class="text-xs text-stone-500">Tools</div>
+                  <div class="text-xs text-stone-400">Tools</div>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Platform Links -->
-          <div class="bg-stone-800 rounded-xl p-6 shadow-sm border border-stone-700 mb-6">
+          <div class="bg-stone-800/90 rounded-xl p-6 shadow-sm border border-stone-700 mb-6">
             <h3 class="font-bold text-white mb-4">Where to Access Your Resources</h3>
             <div class="grid md:grid-cols-3 gap-4">
               <a href="https://the-executive-producer.thinkific.com" target="_blank" 
-                class="p-4 bg-emerald-50 rounded-lg border border-emerald-200 hover:border-emerald-400 transition-colors">
+                class="p-4 bg-emerald-900/30 rounded-lg border border-emerald-700 hover:border-emerald-400 transition-colors">
                 <div class="text-2xl mb-2">📚</div>
                 <div class="font-medium text-white">Training Courses</div>
-                <div class="text-sm text-stone-400">the-executive-producer.com</div>
+                <div class="text-sm text-stone-300">the-executive-producer.com</div>
                 <div class="text-xs text-emerald-600 mt-2">${roadmap.counts.courses} courses in your plan →</div>
               </a>
               <a href="https://bizsimlive.com" target="_blank"
                 class="p-4 bg-purple-50 rounded-lg border border-purple-200 hover:border-purple-400 transition-colors">
                 <div class="text-2xl mb-2">🎮</div>
                 <div class="font-medium text-white">Simulations</div>
-                <div class="text-sm text-stone-400">bizsimlive.com</div>
+                <div class="text-sm text-stone-300">bizsimlive.com</div>
                 <div class="text-xs text-purple-600 mt-2">${roadmap.counts.simulations} simulations in your plan →</div>
               </a>
               <a href="https://projectmanagertool.com" target="_blank"
                 class="p-4 bg-cyan-50 rounded-lg border border-cyan-200 hover:border-cyan-400 transition-colors">
                 <div class="text-2xl mb-2">🛠</div>
                 <div class="font-medium text-white">PM Tools</div>
-                <div class="text-sm text-stone-400">projectmanagertool.com</div>
+                <div class="text-sm text-stone-300">projectmanagertool.com</div>
                 <div class="text-xs text-cyan-600 mt-2">${roadmap.counts.tools} tools in your plan →</div>
               </a>
             </div>
@@ -1398,15 +1461,15 @@
             <h3 class="text-2xl font-bold mb-2">Save Your Roadmap</h3>
             <p class="mb-6 opacity-90">Download a beautifully formatted PDF to track your progress and share with your manager.</p>
             <button onclick="generateReport()" id="downloadBtn"
-              class="bg-stone-800 text-orange-600 font-bold py-4 px-12 rounded-lg hover:bg-orange-50 transition-colors">
+              class="bg-stone-800/90 text-orange-600 font-bold py-4 px-12 rounded-lg hover:bg-orange-900/30 transition-colors">
               📄 Download PDF Report
             </button>
             <p class="mt-4 text-sm opacity-75">Includes: Full assessment • Detailed roadmap • Resource links</p>
           </div>
 
           <div class="flex justify-between mt-8">
-            <button onclick="goToStep('assessment')" class="text-stone-400 hover:text-white font-medium">← Back</button>
-            <button onclick="location.reload()" class="text-stone-400 hover:text-white font-medium">Start Over</button>
+            <button onclick="goToStep('assessment')" class="text-stone-300 hover:text-white font-medium">← Back</button>
+            <button onclick="location.reload()" class="text-stone-300 hover:text-white font-medium">Start Over</button>
           </div>
         </div>
       `;
@@ -1526,10 +1589,10 @@
 
       // Calculate phases
       const phases = [
-        { name: 'Foundation', weeks: `1-${Math.floor(weeks * 0.25)}`, color: 'bg-emerald-500' },
-        { name: 'Core Skills', weeks: `${Math.floor(weeks * 0.25) + 1}-${Math.floor(weeks * 0.5)}`, color: 'bg-blue-500' },
+        { name: 'Foundation', weeks: `1-${Math.floor(weeks * 0.25)}`, color: 'bg-emerald-900/300' },
+        { name: 'Core Skills', weeks: `${Math.floor(weeks * 0.25) + 1}-${Math.floor(weeks * 0.5)}`, color: 'bg-blue-900/300' },
         { name: 'Advanced', weeks: `${Math.floor(weeks * 0.5) + 1}-${Math.floor(weeks * 0.75)}`, color: 'bg-purple-500' },
-        { name: 'Mastery', weeks: `${Math.floor(weeks * 0.75) + 1}-${weeks}`, color: 'bg-orange-500' }
+        { name: 'Mastery', weeks: `${Math.floor(weeks * 0.75) + 1}-${weeks}`, color: 'bg-orange-900/300' }
       ];
 
       // Badge styles
@@ -1543,15 +1606,15 @@
       };
 
       const skillBadges = {
-        'basics': 'bg-stone-800 text-stone-400',
-        'agile': 'bg-blue-50 text-blue-600',
+        'basics': 'bg-stone-800/90 text-stone-300',
+        'agile': 'bg-blue-900/30 text-blue-600',
         'product': 'bg-green-50 text-green-600',
-        'initiation': 'bg-emerald-50 text-emerald-600',
+        'initiation': 'bg-emerald-900/30 text-emerald-600',
         'scope': 'bg-teal-50 text-teal-600',
         'time': 'bg-cyan-50 text-cyan-600',
-        'cost': 'bg-amber-50 text-amber-600',
+        'cost': 'bg-amber-900/30 text-amber-600',
         'quality': 'bg-lime-50 text-lime-600',
-        'resources': 'bg-orange-50 text-orange-600',
+        'resources': 'bg-orange-900/30 text-orange-600',
         'communication': 'bg-pink-50 text-pink-600',
         'risk': 'bg-red-50 text-red-600',
         'procurement': 'bg-violet-50 text-violet-600',
@@ -1581,7 +1644,7 @@
             skill: skillName,
             url: free.url || '#',
             typeBadgeClass: typeBadges['WATCH'],
-            skillBadgeClass: skillBadges[gap.id] || 'bg-stone-800 text-stone-400'
+            skillBadgeClass: skillBadges[gap.id] || 'bg-stone-800/90 text-stone-300'
           });
           totalHours += parseFloat(free.duration) / 60 || 0.5;
         }
@@ -1599,7 +1662,7 @@
             skill: skillName,
             url: course.url || '#',
             typeBadgeClass: typeBadges['COURSE'],
-            skillBadgeClass: skillBadges[gap.id] || 'bg-stone-800 text-stone-400'
+            skillBadgeClass: skillBadges[gap.id] || 'bg-stone-800/90 text-stone-300'
           });
           totalHours += parseFloat(course.duration) || 2;
           courseCount++;
@@ -1618,7 +1681,7 @@
             skill: skillName,
             url: tool.url || '#',
             typeBadgeClass: typeBadges['TOOL'],
-            skillBadgeClass: skillBadges[gap.id] || 'bg-stone-800 text-stone-400'
+            skillBadgeClass: skillBadges[gap.id] || 'bg-stone-800/90 text-stone-300'
           });
           totalHours += parseFloat(tool.duration) || 1;
           toolCount++;
@@ -1637,7 +1700,7 @@
             skill: skillName,
             url: sim.url || '#',
             typeBadgeClass: typeBadges['SIMULATE'],
-            skillBadgeClass: skillBadges[gap.id] || 'bg-stone-800 text-stone-400'
+            skillBadgeClass: skillBadges[gap.id] || 'bg-stone-800/90 text-stone-300'
           });
           totalHours += parseFloat(sim.duration) / 60 || 1;
           simCount++;
@@ -1704,7 +1767,7 @@
       if (btn) {
         btn.disabled = !isValid;
         btn.className = `font-bold py-3 px-8 rounded-lg transition-colors ${
-          isValid ? 'bg-orange-500 hover:bg-orange-600 text-white' : 'bg-stone-200 text-stone-400 cursor-not-allowed'
+          isValid ? 'bg-orange-900/300 hover:bg-orange-600 text-white' : 'bg-stone-700 text-stone-500 cursor-not-allowed'
         }`;
       }
     }
@@ -2171,7 +2234,13 @@
     }
 
     // Initialize
-    render();
+    async function init() {
+      const isAuthed = await checkAuth();
+      if (isAuthed) {
+        render();
+      }
+    }
+    init();
   </script>
 </body>
 </html>
